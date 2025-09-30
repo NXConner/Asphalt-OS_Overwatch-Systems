@@ -140,6 +140,241 @@ export function EstimateDialog({
     }).format(amount);
   };
 
+  const handlePrintEstimate = () => {
+    if (!estimateResult || !job) return;
+    
+    const printContent = generateEstimatePrintContent();
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const handleGenerateContract = () => {
+    if (!estimateResult || !job) return;
+    
+    const contractContent = generateContractContent();
+    const contractWindow = window.open('', '_blank');
+    if (contractWindow) {
+      contractWindow.document.write(contractContent);
+      contractWindow.document.close();
+    }
+  };
+
+  const generateEstimatePrintContent = () => {
+    if (!estimateResult || !job) return '';
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Estimate - ${job.title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .company-info { margin-bottom: 20px; }
+            .job-info { margin-bottom: 20px; }
+            .estimate-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            .estimate-table th, .estimate-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .estimate-table th { background-color: #f2f2f2; }
+            .total-row { font-weight: bold; }
+            .footer { margin-top: 30px; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>AsphaltPro Services</h1>
+            <p>Professional Asphalt Paving & Maintenance</p>
+          </div>
+          
+          <div class="company-info">
+            <strong>AsphaltPro Services</strong><br>
+            337 Ayers Orchard Road<br>
+            Stuart, VA 24171<br>
+            Phone: (276) XXX-XXXX<br>
+            Email: info@asphaltpro.com
+          </div>
+          
+          <div class="job-info">
+            <h3>Estimate for: ${job.title}</h3>
+            <p><strong>Address:</strong> ${job.address}</p>
+            <p><strong>Job Type:</strong> ${getJobTypeDisplay(job.type)}</p>
+            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+            ${job.contactName ? `<p><strong>Contact:</strong> ${job.contactName}</p>` : ''}
+            ${job.contactPhone ? `<p><strong>Phone:</strong> ${job.contactPhone}</p>` : ''}
+          </div>
+          
+          <h3>Materials</h3>
+          <table class="estimate-table">
+            <tr>
+              <th>Item</th>
+              <th>Quantity</th>
+              <th>Unit</th>
+              <th>Unit Cost</th>
+              <th>Total</th>
+            </tr>
+            ${estimateResult.materials.map(material => `
+              <tr>
+                <td>${material.name}</td>
+                <td>${material.quantity}</td>
+                <td>${material.unit}</td>
+                <td>${formatCurrency(material.unitCost)}</td>
+                <td>${formatCurrency(material.totalCost)}</td>
+              </tr>
+            `).join('')}
+          </table>
+          
+          <h3>Labor & Equipment</h3>
+          <table class="estimate-table">
+            <tr>
+              <th>Description</th>
+              <th>Details</th>
+              <th>Cost</th>
+            </tr>
+            <tr>
+              <td>Labor</td>
+              <td>${estimateResult.labor.hours.toFixed(1)} hours at ${formatCurrency(estimateResult.labor.rate)}/hr</td>
+              <td>${formatCurrency(estimateResult.labor.cost)}</td>
+            </tr>
+            <tr>
+              <td>Equipment & Fuel</td>
+              <td>Equipment operation and fuel costs</td>
+              <td>${formatCurrency(estimateResult.equipment.fuelCost + estimateResult.equipment.equipmentCost)}</td>
+            </tr>
+            <tr>
+              <td>Travel</td>
+              <td>${estimateResult.travel.distance} miles round trip</td>
+              <td>${formatCurrency(estimateResult.travel.cost)}</td>
+            </tr>
+          </table>
+          
+          <h3>Estimate Summary</h3>
+          <table class="estimate-table">
+            <tr>
+              <td>Subtotal</td>
+              <td>${formatCurrency(estimateResult.subtotal)}</td>
+            </tr>
+            <tr>
+              <td>Overhead (15%)</td>
+              <td>${formatCurrency(estimateResult.overhead)}</td>
+            </tr>
+            <tr>
+              <td>Profit (25%)</td>
+              <td>${formatCurrency(estimateResult.profit)}</td>
+            </tr>
+            <tr class="total-row">
+              <td><strong>Total Estimate</strong></td>
+              <td><strong>${formatCurrency(estimateResult.total)}</strong></td>
+            </tr>
+          </table>
+          
+          <div class="footer">
+            <p>This estimate is valid for 30 days from the date above.</p>
+            <p>Final pricing subject to site inspection and material availability.</p>
+            <p>Thank you for considering AsphaltPro Services for your paving needs!</p>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
+  const generateContractContent = () => {
+    if (!estimateResult || !job) return '';
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Service Contract - ${job.title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .contract-title { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+            .section { margin-bottom: 20px; }
+            .signature-section { margin-top: 50px; }
+            .signature-line { border-bottom: 1px solid #000; width: 300px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>AsphaltPro Services</h1>
+            <p>Professional Asphalt Paving & Maintenance</p>
+            <p>337 Ayers Orchard Road, Stuart, VA 24171</p>
+          </div>
+          
+          <div class="contract-title">SERVICE CONTRACT</div>
+          
+          <div class="section">
+            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>Contract #:</strong> ${Date.now()}</p>
+          </div>
+          
+          <div class="section">
+            <h3>CONTRACTOR INFORMATION</h3>
+            <p>AsphaltPro Services<br>
+            337 Ayers Orchard Road<br>
+            Stuart, VA 24171<br>
+            Phone: (276) XXX-XXXX</p>
+          </div>
+          
+          <div class="section">
+            <h3>CUSTOMER INFORMATION</h3>
+            <p><strong>Property Address:</strong> ${job.address}</p>
+            ${job.contactName ? `<p><strong>Contact Name:</strong> ${job.contactName}</p>` : ''}
+            ${job.contactPhone ? `<p><strong>Phone:</strong> ${job.contactPhone}</p>` : ''}
+            ${job.contactEmail ? `<p><strong>Email:</strong> ${job.contactEmail}</p>` : ''}
+          </div>
+          
+          <div class="section">
+            <h3>SCOPE OF WORK</h3>
+            <p><strong>Service Type:</strong> ${getJobTypeDisplay(job.type)}</p>
+            ${job.squareFootage ? `<p><strong>Area:</strong> ${job.squareFootage.toLocaleString()} square feet</p>` : ''}
+            ${job.linearFootage ? `<p><strong>Crack Repair:</strong> ${job.linearFootage.toLocaleString()} linear feet</p>` : ''}
+            ${job.numberOfStalls ? `<p><strong>Parking Stalls:</strong> ${job.numberOfStalls} stalls</p>` : ''}
+            ${job.description ? `<p><strong>Description:</strong> ${job.description}</p>` : ''}
+          </div>
+          
+          <div class="section">
+            <h3>TERMS AND CONDITIONS</h3>
+            <p>1. <strong>Materials:</strong> Contractor shall provide all materials as specified in the estimate, including SealMaster PMM concentrate, sand, and other required materials.</p>
+            <p>2. <strong>Labor:</strong> All work will be performed by qualified personnel in accordance with industry standards.</p>
+            <p>3. <strong>Weather:</strong> Work is weather-dependent. Sealcoating requires temperatures above 50°F and no precipitation for 24 hours.</p>
+            <p>4. <strong>Preparation:</strong> Customer is responsible for ensuring the work area is accessible and free of vehicles.</p>
+            <p>5. <strong>Payment:</strong> Payment is due within 30 days of completion unless otherwise agreed.</p>
+            <p>6. <strong>Warranty:</strong> We warrant our workmanship for one (1) year from completion date.</p>
+          </div>
+          
+          <div class="section">
+            <h3>CONTRACT PRICE</h3>
+            <p><strong>Total Contract Amount: ${formatCurrency(estimateResult.total)}</strong></p>
+            <p>Payment Schedule: 50% down, 50% upon completion</p>
+          </div>
+          
+          <div class="signature-section">
+            <h3>SIGNATURES</h3>
+            <div style="display: flex; justify-content: space-between;">
+              <div>
+                <p><strong>CONTRACTOR:</strong></p>
+                <div class="signature-line"></div>
+                <p>AsphaltPro Services</p>
+                <p>Date: _______________</p>
+              </div>
+              
+              <div>
+                <p><strong>CUSTOMER:</strong></p>
+                <div class="signature-line"></div>
+                <p>Print Name: _______________</p>
+                <p>Date: _______________</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
   const getJobTypeDisplay = (type: string) => {
     switch (type) {
       case 'SEALCOATING': return 'Sealcoating';
@@ -488,7 +723,7 @@ export function EstimateDialog({
           <div className="text-sm text-muted-foreground">
             {savedEstimate ? 
               `Estimate saved as #${savedEstimate.estimateNumber}` : 
-              'Click "Save Estimate" to create a formal quote'
+              estimateResult ? 'Estimate calculated - ready to save or print' : 'Estimate will appear here'
             }
           </div>
           
@@ -496,6 +731,18 @@ export function EstimateDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close
             </Button>
+            {estimateResult && (
+              <>
+                <Button variant="outline" onClick={handlePrintEstimate}>
+                  <Download className="h-4 w-4 mr-1" />
+                  Print Quote
+                </Button>
+                <Button variant="outline" onClick={handleGenerateContract}>
+                  <FileText className="h-4 w-4 mr-1" />
+                  Generate Contract
+                </Button>
+              </>
+            )}
             {!savedEstimate && estimateResult && (
               <Button onClick={handleSaveEstimate} disabled={loading}>
                 {loading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
@@ -505,10 +752,6 @@ export function EstimateDialog({
             )}
             {savedEstimate && (
               <>
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-1" />
-                  Download PDF
-                </Button>
                 <Button>
                   <Send className="h-4 w-4 mr-1" />
                   Send to Customer

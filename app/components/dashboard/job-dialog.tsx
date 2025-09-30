@@ -58,6 +58,7 @@ export function JobDialog({
 }: JobDialogProps) {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     address: '',
