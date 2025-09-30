@@ -1,0 +1,316 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/asphalt_paving_maps/app/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// User authentication and roles
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(EMPLOYEE)
+  firstName     String?
+  lastName      String?
+  phone         String?
+  hourlyRate    Float     @default(20.00)
+  isActive      Boolean   @default(true)
+  hireDate      DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  estimates     Estimate[]
+  timesheets    Timesheet[]
+  createdJobs   Job[]     @relation("CreatedBy")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Enums
+enum Role {
+  ADMIN
+  OWNER
+  EMPLOYEE
+}
+
+enum JobStatus {
+  POSSIBLE    // Yellow
+  COMPLETED   // Green
+  LOST        // Red
+  IN_PROGRESS // Blue
+}
+
+enum JobType {
+  SEALCOATING
+  CRACK_REPAIR
+  ASPHALT_PATCHING
+  LINE_STRIPING
+  COMBINATION
+}
+
+enum EstimateStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+// Jobs and addresses
+model Job {
+  id          String    @id @default(cuid())
+  title       String
+  address     String
+  latitude    Float?
+  longitude   Float?
+  status      JobStatus @default(POSSIBLE)
+  type        JobType
+  description String?
+  notes       String?
+  
+  // Contact information
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  
+  // Job details
+  squareFootage    Float?
+  linearFootage    Float?
+  numberOfStalls   Int?
+  hasOilSpots      Boolean @default(false)
+  crackSeverity    String? // LIGHT, MEDIUM, HEAVY
+  
+  // Scheduling
+  scheduledDate    DateTime?
+  completedDate    DateTime?
+  estimatedHours   Float?
+  actualHours      Float?
+  
+  // Financial
+  estimatedCost    Float?
+  actualCost       Float?
+  invoicedAmount   Float?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  creator   User?    @relation("CreatedBy", fields: [createdBy], references: [id])
+  
+  estimates Estimate[]
+  materials JobMaterial[]
+}
+
+// Estimates
+model Estimate {
+  id          String         @id @default(cuid())
+  jobId       String
+  estimateNumber String      @unique
+  status      EstimateStatus @default(DRAFT)
+  
+  // Labor costs
+  laborHours     Float
+  laborRate      Float
+  laborCost      Float
+  
+  // Material costs
+  materialCost   Float
+  
+  // Equipment and fuel
+  equipmentCost  Float
+  fuelCost       Float
+  
+  // Travel
+  travelDistance Float?
+  travelCost     Float?
+  
+  // Totals
+  subtotal       Float
+  overhead       Float
+  profit         Float
+  totalCost      Float
+  
+  // Additional details
+  notes          String?
+  validUntil     DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  creator   User     @relation(fields: [createdBy], references: [id])
+  job       Job      @relation(fields: [jobId], references: [id])
+  
+  materials EstimateMaterial[]
+}
+
+// Materials master data
+model Material {
+  id          String  @id @default(cuid())
+  name        String
+  supplier    String
+  unit        String  // gallon, bag, box, etc.
+  costPerUnit Float
+  description String?
+  category    String? // SEALER, SAND, ADDITIVE, CRACK_FILLER, etc.
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  jobMaterials      JobMaterial[]
+  estimateMaterials EstimateMaterial[]
+}
+
+// Junction tables for materials
+model JobMaterial {
+  id         String @id @default(cuid())
+  jobId      String
+  materialId String
+  quantity   Float
+  unitCost   Float
+  totalCost  Float
+  
+  job      Job      @relation(fields: [jobId], references: [id])
+  material Material @relation(fields: [materialId], references: [id])
+  
+  @@unique([jobId, materialId])
+}
+
+model EstimateMaterial {
+  id         String @id @default(cuid())
+  estimateId String
+  materialId String
+  quantity   Float
+  unitCost   Float
+  totalCost  Float
+  
+  estimate Estimate @relation(fields: [estimateId], references: [id])
+  material Material @relation(fields: [materialId], references: [id])
+  
+  @@unique([estimateId, materialId])
+}
+
+// Employee time tracking
+model Timesheet {
+  id        String    @id @default(cuid())
+  userId    String
+  clockIn   DateTime
+  clockOut  DateTime?
+  
+  // Location tracking for geofencing
+  clockInLatitude  Float?
+  clockInLongitude Float?
+  clockOutLatitude Float?
+  clockOutLongitude Float?
+  
+  // Location verification
+  isValidLocation Boolean @default(false)
+  
+  // Hours calculation
+  totalHours Float?
+  regularHours Float?
+  overtimeHours Float?
+  
+  // Pay calculation
+  hourlyRate Float
+  regularPay Float?
+  overtimePay Float?
+  totalPay Float?
+  
+  // Job association
+  jobId String?
+  
+  notes String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id])
+}
+
+// Payroll records
+model PayrollPeriod {
+  id        String   @id @default(cuid())
+  startDate DateTime
+  endDate   DateTime
+  payDate   DateTime?
+  status    String   @default("DRAFT") // DRAFT, PROCESSED, PAID
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  payrollRecords PayrollRecord[]
+}
+
+model PayrollRecord {
+  id              String @id @default(cuid())
+  payrollPeriodId String
+  userId          String
+  
+  // Hours
+  regularHours   Float
+  overtimeHours  Float
+  totalHours     Float
+  
+  // Rates
+  regularRate    Float
+  overtimeRate   Float
+  
+  // Pay
+  regularPay     Float
+  overtimePay    Float
+  grossPay       Float
+  
+  // Deductions (if any)
+  taxes          Float @default(0)
+  deductions     Float @default(0)
+  netPay         Float
+  
+  payrollPeriod PayrollPeriod @relation(fields: [payrollPeriodId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([payrollPeriodId, userId])
+}

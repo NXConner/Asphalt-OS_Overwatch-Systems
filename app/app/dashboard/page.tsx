@@ -1,0 +1,172 @@
+
+'use client';
+
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { GoogleMaps } from '@/components/maps/google-maps';
+import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
+import { JobDialog } from '@/components/dashboard/job-dialog';
+import { EstimateDialog } from '@/components/dashboard/estimate-dialog';
+import { TimesheetDialog } from '@/components/dashboard/timesheet-dialog';
+import { MapMarker } from '@/lib/types';
+import { Loader2 } from 'lucide-react';
+
+export default function DashboardPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [showJobDialog, setShowJobDialog] = useState(false);
+  const [showEstimateDialog, setShowEstimateDialog] = useState(false);
+  const [showTimesheetDialog, setShowTimesheetDialog] = useState(false);
+  const [newJobLocation, setNewJobLocation] = useState<{
+    lat: number;
+    lng: number;
+    address?: string;
+  } | undefined>(undefined);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/');
+    }
+  }, [status, router]);
+
+  // Fetch jobs
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchJobs();
+    }
+  }, [status]);
+
+  const fetchJobs = async () => {
+    try {
+      const response = await fetch('/api/jobs');
+      if (response.ok) {
+        const jobsData = await response.json();
+        setJobs(jobsData);
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Convert jobs to map markers
+  const markers: MapMarker[] = jobs?.map(job => ({
+    id: job.id,
+    position: { lat: job.latitude || 36.6484, lng: job.longitude || -80.2737 },
+    title: job.title,
+    status: job.status,
+    type: job.type,
+    address: job.address,
+    description: job.description,
+    estimatedCost: job.estimatedCost,
+  })) || [];
+
+  const handleMarkerClick = (marker: MapMarker) => {
+    const job = jobs?.find(j => j.id === marker.id);
+    if (job) {
+      setSelectedJob(job);
+      setShowJobDialog(true);
+    }
+  };
+
+  const handleMapClick = (lat: number, lng: number, address?: string) => {
+    setNewJobLocation({ lat, lng, address });
+    setShowJobDialog(true);
+  };
+
+  const handleJobSaved = () => {
+    setShowJobDialog(false);
+    setSelectedJob(null);
+    setNewJobLocation(undefined);
+    fetchJobs(); // Refresh jobs
+  };
+
+  const handleEstimate = (job: any) => {
+    setSelectedJob(job);
+    setShowEstimateDialog(true);
+  };
+
+  if (status === 'loading' || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex flex-col overflow-hidden">
+      <DashboardHeader 
+        onTimesheetClick={() => setShowTimesheetDialog(true)}
+        onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+      
+      <div className="flex flex-1 overflow-hidden">
+        <DashboardSidebar 
+          jobs={jobs}
+          collapsed={sidebarCollapsed}
+          onJobSelect={(job) => {
+            setSelectedJob(job);
+            setShowJobDialog(true);
+          }}
+          onNewJob={() => setShowJobDialog(true)}
+          onEstimate={handleEstimate}
+        />
+        
+        <main className="flex-1 overflow-hidden">
+          <GoogleMaps
+            markers={markers}
+            onMarkerClick={handleMarkerClick}
+            onMapClick={handleMapClick}
+            enableMeasuring={true}
+            onAreaMeasured={(area) => {
+              console.log('Area measured:', area, 'sq ft');
+            }}
+          />
+        </main>
+      </div>
+
+      {/* Dialogs */}
+      <JobDialog
+        open={showJobDialog}
+        onOpenChange={setShowJobDialog}
+        job={selectedJob}
+        initialLocation={newJobLocation}
+        onSaved={handleJobSaved}
+      />
+
+      <EstimateDialog
+        open={showEstimateDialog}
+        onOpenChange={setShowEstimateDialog}
+        job={selectedJob}
+      />
+
+      <TimesheetDialog
+        open={showTimesheetDialog}
+        onOpenChange={setShowTimesheetDialog}
+      />
+    </div>
+  );
+}
