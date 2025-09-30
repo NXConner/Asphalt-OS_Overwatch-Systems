@@ -314,3 +314,17 @@ model PayrollRecord {
   
   @@unique([payrollPeriodId, userId])
 }
+
+// Business settings for dynamic configuration
+model BusinessSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  label     String
+  category  String   // MATERIAL_COSTS, LABOR_RATES, EQUIPMENT_COSTS, RATES
+  unit      String?  // gallon, hour, percentage, etc.
+  dataType  String   @default("FLOAT") // FLOAT, STRING, BOOLEAN, INT
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

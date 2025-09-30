@@ -10,6 +10,7 @@ import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
 import { JobDialog } from '@/components/dashboard/job-dialog';
 import { EstimateDialog } from '@/components/dashboard/estimate-dialog';
 import { TimesheetDialog } from '@/components/dashboard/timesheet-dialog';
+import { DirectionsPanel } from '@/components/directions/directions-panel';
 import { MapMarker } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -22,6 +23,8 @@ export default function DashboardPage() {
   const [showJobDialog, setShowJobDialog] = useState(false);
   const [showEstimateDialog, setShowEstimateDialog] = useState(false);
   const [showTimesheetDialog, setShowTimesheetDialog] = useState(false);
+  const [showDirectionsPanel, setShowDirectionsPanel] = useState(false);
+  const [selectedJobForDirections, setSelectedJobForDirections] = useState<string>('');
   const [newJobLocation, setNewJobLocation] = useState<{
     lat: number;
     lng: number;
@@ -94,6 +97,17 @@ export default function DashboardPage() {
     setShowEstimateDialog(true);
   };
 
+  const handleDirections = (job?: any) => {
+    if (job) {
+      setSelectedJobForDirections(job.id);
+    }
+    setShowDirectionsPanel(true);
+  };
+
+  const handleSettings = () => {
+    router.push('/settings');
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -121,6 +135,8 @@ export default function DashboardPage() {
       <DashboardHeader 
         onTimesheetClick={() => setShowTimesheetDialog(true)}
         onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onDirectionsClick={() => handleDirections()}
+        onSettingsClick={handleSettings}
       />
       
       <div className="flex flex-1 overflow-hidden">
@@ -133,6 +149,7 @@ export default function DashboardPage() {
           }}
           onNewJob={() => setShowJobDialog(true)}
           onEstimate={handleEstimate}
+          onDirections={handleDirections}
         />
         
         <main className="flex-1 overflow-hidden">
@@ -166,6 +183,14 @@ export default function DashboardPage() {
       <TimesheetDialog
         open={showTimesheetDialog}
         onOpenChange={setShowTimesheetDialog}
+      />
+
+      <DirectionsPanel
+        isOpen={showDirectionsPanel}
+        onClose={() => setShowDirectionsPanel(false)}
+        jobs={jobs}
+        selectedJobId={selectedJobForDirections}
+        onJobSelect={(jobId) => setSelectedJobForDirections(jobId)}
       />
     </div>
   );

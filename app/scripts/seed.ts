@@ -1,6 +1,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { DEFAULT_BUSINESS_SETTINGS } from '../lib/business-logic';
 
 const prisma = new PrismaClient();
 
@@ -99,6 +100,64 @@ async function main() {
   for (const material of materials) {
     await prisma.material.create({
       data: material,
+    });
+  }
+
+  // Create business settings
+  console.log('Creating business settings...');
+
+  const businessSettings = [
+    // Material costs
+    { key: 'PMM_CONCENTRATE', value: '3.65', label: 'PMM Concentrate (per gallon)', category: 'MATERIAL_COSTS', unit: 'gallon' },
+    { key: 'SAND_50LB', value: '10.00', label: 'Sand 50lb Bag', category: 'MATERIAL_COSTS', unit: 'bag' },
+    { key: 'PREP_SEAL', value: '50.00', label: 'Prep Seal Oil Spot Primer (5-gallon bucket)', category: 'MATERIAL_COSTS', unit: 'bucket' },
+    { key: 'FAST_DRY', value: '140.00', label: 'Fast Dry Additive (5-gallon bucket)', category: 'MATERIAL_COSTS', unit: 'bucket' },
+    { key: 'CRACK_FILLER_30LB', value: '44.95', label: 'Crack Filler (30lb box)', category: 'MATERIAL_COSTS', unit: 'box' },
+    { key: 'FLEXMASTER_CRACK', value: '27.24', label: 'FlexMaster Crack Sealant (per gallon)', category: 'MATERIAL_COSTS', unit: 'gallon' },
+    { key: 'PROPANE_REFILL', value: '10.00', label: 'Propane Tank Refill', category: 'MATERIAL_COSTS', unit: 'tank' },
+    { key: 'HOT_MIX_ASPHALT', value: '3.50', label: 'Hot Mix Asphalt (per sq ft)', category: 'MATERIAL_COSTS', unit: 'sq_ft' },
+    { key: 'COLD_PATCH', value: '3.00', label: 'Cold Patch Asphalt (per sq ft)', category: 'MATERIAL_COSTS', unit: 'sq_ft' },
+    { key: 'LINE_PAINT', value: '0.87', label: 'Line Striping Paint (per linear ft)', category: 'MATERIAL_COSTS', unit: 'linear_ft' },
+    
+    // Application rates
+    { key: 'SEALCOATING_COVERAGE', value: '76', label: 'Sealcoating Coverage (sq ft per gallon)', category: 'RATES', unit: 'sq_ft/gallon' },
+    { key: 'SAND_RATIO', value: '300', label: 'Sand Ratio (lbs per 100 gallons PMM)', category: 'RATES', unit: 'lbs/100gal' },
+    { key: 'WATER_RATIO', value: '0.2', label: 'Water Ratio (20% by volume)', category: 'RATES', unit: 'percentage' },
+    { key: 'FAST_DRY_RATIO', value: '2', label: 'Fast Dry Ratio (gallons per 125 gallons concentrate)', category: 'RATES', unit: 'gal/125gal' },
+    { key: 'PREP_SEAL_COVERAGE', value: '175', label: 'Prep Seal Coverage (sq ft per gallon)', category: 'RATES', unit: 'sq_ft/gallon' },
+    { key: 'CRACK_FILL_RATE', value: '1.75', label: 'Crack Fill Rate ($ per linear ft)', category: 'RATES', unit: '$/linear_ft' },
+    { key: 'STALL_LINEAR_FEET', value: '20', label: 'Standard Parking Stall Linear Feet', category: 'RATES', unit: 'linear_ft' },
+    { key: 'DOUBLE_STALL_LINEAR_FEET', value: '25', label: 'Double Parking Stall Linear Feet', category: 'RATES', unit: 'linear_ft' },
+    
+    // Labor rates
+    { key: 'EMPLOYEE_RATE', value: '20.00', label: 'Employee Hourly Rate', category: 'LABOR_RATES', unit: '$/hour' },
+    { key: 'CRACK_FILL_EFFICIENCY', value: '100', label: 'Crack Fill Efficiency (linear feet per hour)', category: 'LABOR_RATES', unit: 'linear_ft/hour' },
+    { key: 'SEALCOAT_EFFICIENCY', value: '2000', label: 'Sealcoat Efficiency (sq ft per hour per person)', category: 'LABOR_RATES', unit: 'sq_ft/hour/person' },
+    { key: 'STRIPING_EFFICIENCY', value: '500', label: 'Line Striping Efficiency (linear feet per hour)', category: 'LABOR_RATES', unit: 'linear_ft/hour' },
+    { key: 'PATCHING_EFFICIENCY', value: '50', label: 'Asphalt Patching Efficiency (sq ft per hour)', category: 'LABOR_RATES', unit: 'sq_ft/hour' },
+    
+    // Equipment costs
+    { key: 'FUEL_OPERATIONAL', value: '2', label: 'Fuel Operational (gallons per hour)', category: 'EQUIPMENT_COSTS', unit: 'gallons/hour' },
+    { key: 'FUEL_IDLE', value: '50', label: 'Fuel Idle Cost ($ per hour)', category: 'EQUIPMENT_COSTS', unit: '$/hour' },
+    { key: 'VEHICLE_MPG', value: '17.5', label: 'Average Vehicle MPG', category: 'EQUIPMENT_COSTS', unit: 'mpg' },
+    { key: 'FUEL_PRICE', value: '3.50', label: 'Fuel Price ($ per gallon)', category: 'EQUIPMENT_COSTS', unit: '$/gallon' },
+    
+    // Business rates
+    { key: 'OVERHEAD_PERCENTAGE', value: '15', label: 'Overhead Percentage', category: 'BUSINESS_RATES', unit: 'percentage' },
+    { key: 'PROFIT_PERCENTAGE', value: '25', label: 'Profit Margin Percentage', category: 'BUSINESS_RATES', unit: 'percentage' },
+    { key: 'EQUIPMENT_HOURLY_RATE', value: '5', label: 'Equipment Hourly Rate ($ per hour)', category: 'BUSINESS_RATES', unit: '$/hour' },
+  ];
+
+  for (const setting of businessSettings) {
+    await prisma.businessSetting.upsert({
+      where: { key: setting.key },
+      update: {
+        value: setting.value,
+        label: setting.label,
+        category: setting.category,
+        unit: setting.unit,
+      },
+      create: setting,
     });
   }
 

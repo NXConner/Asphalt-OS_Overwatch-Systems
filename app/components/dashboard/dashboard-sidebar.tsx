@@ -23,6 +23,7 @@ import {
   Settings,
   Calculator,
   Clock,
+  Navigation,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +33,7 @@ interface DashboardSidebarProps {
   onJobSelect: (job: any) => void;
   onNewJob: () => void;
   onEstimate: (job: any) => void;
+  onDirections?: (job: any) => void;
 }
 
 export function DashboardSidebar({ 
@@ -39,7 +41,8 @@ export function DashboardSidebar({
   collapsed, 
   onJobSelect, 
   onNewJob, 
-  onEstimate 
+  onEstimate,
+  onDirections 
 }: DashboardSidebarProps) {
   const { data: session } = useSession();
   const [searchTerm, setSearchTerm] = useState('');
@@ -280,6 +283,20 @@ export function DashboardSidebar({
                         <Calculator className="h-3 w-3 mr-1" />
                         Estimate
                       </Button>
+                      {onDirections && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-6 px-2 flex-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDirections(job);
+                          }}
+                        >
+                          <Navigation className="h-3 w-3 mr-1" />
+                          Directions
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

@@ -23,14 +23,18 @@ import {
   Settings,
   Timer,
   TimerOff,
+  Navigation,
+  Route,
 } from 'lucide-react';
 
 interface DashboardHeaderProps {
   onTimesheetClick: () => void;
   onSidebarToggle: () => void;
+  onDirectionsClick: () => void;
+  onSettingsClick: () => void;
 }
 
-export function DashboardHeader({ onTimesheetClick, onSidebarToggle }: DashboardHeaderProps) {
+export function DashboardHeader({ onTimesheetClick, onSidebarToggle, onDirectionsClick, onSettingsClick }: DashboardHeaderProps) {
   const { data: session } = useSession();
   const [clockStatus, setClockStatus] = useState<{ isClockedIn: boolean; timesheet?: any }>({
     isClockedIn: false
@@ -129,6 +133,31 @@ export function DashboardHeader({ onTimesheetClick, onSidebarToggle }: Dashboard
           </div>
         )}
 
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onDirectionsClick}
+            className="hidden sm:flex"
+          >
+            <Navigation className="h-4 w-4 mr-1" />
+            Directions
+          </Button>
+          
+          {['ADMIN', 'OWNER'].includes(session?.user?.role || '') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSettingsClick}
+              className="hidden sm:flex"
+            >
+              <Settings className="h-4 w-4 mr-1" />
+              Business Settings
+            </Button>
+          )}
+        </div>
+
         {/* Current Time */}
         <div className="hidden md:flex items-center text-sm text-muted-foreground">
           <Clock className="h-4 w-4 mr-1" />
@@ -182,13 +211,21 @@ export function DashboardHeader({ onTimesheetClick, onSidebarToggle }: Dashboard
               </>
             )}
             
+            <DropdownMenuItem onClick={onDirectionsClick}>
+              <Navigation className="mr-2 h-4 w-4" />
+              <span>Directions</span>
+            </DropdownMenuItem>
+            
+            {['ADMIN', 'OWNER'].includes(session?.user?.role || '') && (
+              <DropdownMenuItem onClick={onSettingsClick}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Business Settings</span>
+              </DropdownMenuItem>
+            )}
+            
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>

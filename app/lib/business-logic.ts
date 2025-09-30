@@ -12,6 +12,25 @@ export interface EstimateInput {
   businessAddress: string;
 }
 
+export interface DirectionsResult {
+  route: {
+    distance: string;
+    duration: string;
+    steps: Array<{
+      instruction: string;
+      distance: string;
+      duration: string;
+    }>;
+  };
+  fuelCost: number;
+  distanceValue: number; // in meters
+  durationValue: number; // in seconds
+}
+
+export interface BusinessSettings {
+  [key: string]: number | string | boolean;
+}
+
 export interface MaterialCalculation {
   name: string;
   quantity: number;
@@ -41,48 +60,117 @@ export interface EstimateResult {
   total: number;
 }
 
-// Material costs from business specifications
-export const MATERIAL_COSTS = {
-  PMM_CONCENTRATE: 3.65, // per gallon
-  SAND_50LB: 10.00,       // per bag
-  PREP_SEAL: 50.00,       // per 5-gallon bucket
-  FAST_DRY: 140.00,       // per 5-gallon bucket
-  CRACK_FILLER_30LB: 44.95, // per 30lb box
-  FLEXMASTER_CRACK: 27.24,  // per gallon
-  PROPANE_REFILL: 10.00,    // per tank
-  HOT_MIX_ASPHALT: 3.50,    // per sq ft
-  COLD_PATCH: 3.00,         // per sq ft
-  LINE_PAINT: 0.87,         // per linear foot
-};
-
-// Application rates and coverage
-export const APPLICATION_RATES = {
-  SEALCOATING_COVERAGE: 76, // sq ft per gallon of mixed sealer (average of 70-82)
-  SAND_RATIO: 300, // lbs per 100 gallons PMM (6 bags * 50lbs)
-  WATER_RATIO: 0.2, // 20% water by volume
-  FAST_DRY_RATIO: 2, // gallons per 125 gallons concentrate
-  PREP_SEAL_COVERAGE: 175, // sq ft per gallon (average of 150-200)
-  CRACK_FILL_RATE: 1.75, // $/linear foot (average of $0.50-$3.00)
-  STALL_LINEAR_FEET: 20, // standard parking stall
+// Default business settings (used as fallback if database values not available)
+export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
+  // Material costs
+  PMM_CONCENTRATE: 3.65,
+  SAND_50LB: 10.00,
+  PREP_SEAL: 50.00,
+  FAST_DRY: 140.00,
+  CRACK_FILLER_30LB: 44.95,
+  FLEXMASTER_CRACK: 27.24,
+  PROPANE_REFILL: 10.00,
+  HOT_MIX_ASPHALT: 3.50,
+  COLD_PATCH: 3.00,
+  LINE_PAINT: 0.87,
+  
+  // Application rates
+  SEALCOATING_COVERAGE: 76,
+  SAND_RATIO: 300,
+  WATER_RATIO: 0.2,
+  FAST_DRY_RATIO: 2,
+  PREP_SEAL_COVERAGE: 175,
+  CRACK_FILL_RATE: 1.75,
+  STALL_LINEAR_FEET: 20,
   DOUBLE_STALL_LINEAR_FEET: 25,
+  
+  // Labor rates
+  EMPLOYEE_RATE: 20.00,
+  CRACK_FILL_EFFICIENCY: 100,
+  SEALCOAT_EFFICIENCY: 2000,
+  STRIPING_EFFICIENCY: 500,
+  PATCHING_EFFICIENCY: 50,
+  
+  // Equipment costs
+  FUEL_OPERATIONAL: 2,
+  FUEL_IDLE: 50,
+  VEHICLE_MPG: 17.5,
+  FUEL_PRICE: 3.50,
+  
+  // Business rates
+  OVERHEAD_PERCENTAGE: 15,
+  PROFIT_PERCENTAGE: 25,
+  EQUIPMENT_HOURLY_RATE: 5,
 };
 
-// Labor rates and efficiency
-export const LABOR_RATES = {
-  EMPLOYEE_RATE: 20.00, // per hour
-  CRACK_FILL_EFFICIENCY: 100, // linear feet per hour
-  SEALCOAT_EFFICIENCY: 2000, // sq ft per hour per person
-  STRIPING_EFFICIENCY: 500, // linear feet per hour
-  PATCHING_EFFICIENCY: 50, // sq ft per hour
-};
+// Business address constant
+export const BUSINESS_ADDRESS = "337 Ayers Orchard Road, Stuart, VA 24171";
 
-// Equipment costs
-export const EQUIPMENT_COSTS = {
-  FUEL_OPERATIONAL: 2, // gallons per hour for equipment
-  FUEL_IDLE: 50, // $ per hour excessive idle
-  VEHICLE_MPG: 17.5, // average MPG for trucks (15-20)
-  FUEL_PRICE: 3.50, // $ per gallon (estimate)
-};
+// Helper function to get setting value with fallback
+function getSetting(settings: BusinessSettings | null, key: string): number {
+  if (!settings || settings[key] === undefined) {
+    return DEFAULT_BUSINESS_SETTINGS[key] as number;
+  }
+  return Number(settings[key]);
+}
+
+// Google Maps Directions API integration
+export async function getDirections(
+  origin: string,
+  destination: string,
+  settings: BusinessSettings | null = null
+): Promise<DirectionsResult | null> {
+  try {
+    const directionsService = new google.maps.DirectionsService();
+    
+    const result = await directionsService.route({
+      origin,
+      destination,
+      travelMode: google.maps.TravelMode.DRIVING,
+      unitSystem: google.maps.UnitSystem.IMPERIAL,
+      avoidTolls: false,
+      avoidHighways: false,
+    });
+
+    if (result.routes && result.routes.length > 0) {
+      const route = result.routes[0];
+      const leg = route.legs[0];
+      
+      if (!leg) return null;
+
+      const steps = leg.steps?.map(step => ({
+        instruction: step.instructions?.replace(/<[^>]*>/g, '') || '',
+        distance: step.distance?.text || '',
+        duration: step.duration?.text || '',
+      })) || [];
+
+      const distanceValue = leg.distance?.value || 0; // meters
+      const durationValue = leg.duration?.value || 0; // seconds
+      
+      // Calculate fuel cost for round trip
+      const distanceInMiles = (distanceValue * 2) / 1609.34; // round trip in miles
+      const vehicleMpg = getSetting(settings, 'VEHICLE_MPG');
+      const fuelPrice = getSetting(settings, 'FUEL_PRICE');
+      const fuelCost = (distanceInMiles / vehicleMpg) * fuelPrice;
+
+      return {
+        route: {
+          distance: leg.distance?.text || '',
+          duration: leg.duration?.text || '',
+          steps,
+        },
+        fuelCost: Math.round(fuelCost * 100) / 100,
+        distanceValue,
+        durationValue,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting directions:', error);
+    return null;
+  }
+}
 
 // Calculate distance between two addresses (simplified - in real app would use Google Maps API)
 function calculateDistance(address1: string, address2: string): number {
@@ -95,21 +183,27 @@ function calculateDistance(address1: string, address2: string): number {
   return 25;
 }
 
-export function calculateSealcoatingMaterials(squareFootage: number, hasOilSpots: boolean) {
+export function calculateSealcoatingMaterials(
+  squareFootage: number, 
+  hasOilSpots: boolean, 
+  settings: BusinessSettings | null = null
+) {
   const materials: MaterialCalculation[] = [];
   
   // Calculate mixed sealer needed
-  const mixedSealerNeeded = squareFootage / APPLICATION_RATES.SEALCOATING_COVERAGE;
+  const sealcoatingCoverage = getSetting(settings, 'SEALCOATING_COVERAGE');
+  const mixedSealerNeeded = squareFootage / sealcoatingCoverage;
   
   // Calculate PMM concentrate (accounting for water dilution)
-  const concentrateNeeded = mixedSealerNeeded / (1 + APPLICATION_RATES.WATER_RATIO);
+  const waterRatio = getSetting(settings, 'WATER_RATIO');
+  const concentrateNeeded = mixedSealerNeeded / (1 + waterRatio);
   
   materials.push({
     name: 'SealMaster PMM Concentrate',
     quantity: Math.ceil(concentrateNeeded),
     unit: 'gallon',
-    unitCost: MATERIAL_COSTS.PMM_CONCENTRATE,
-    totalCost: Math.ceil(concentrateNeeded) * MATERIAL_COSTS.PMM_CONCENTRATE
+    unitCost: getSetting(settings, 'PMM_CONCENTRATE'),
+    totalCost: Math.ceil(concentrateNeeded) * getSetting(settings, 'PMM_CONCENTRATE')
   });
 
   // Calculate sand needed (300 lbs per 100 gallons = 6 bags per 100 gallons)
@@ -118,42 +212,48 @@ export function calculateSealcoatingMaterials(squareFootage: number, hasOilSpots
     name: 'Sand (50lb bags)',
     quantity: sandBagsNeeded,
     unit: 'bag',
-    unitCost: MATERIAL_COSTS.SAND_50LB,
-    totalCost: sandBagsNeeded * MATERIAL_COSTS.SAND_50LB
+    unitCost: getSetting(settings, 'SAND_50LB'),
+    totalCost: sandBagsNeeded * getSetting(settings, 'SAND_50LB')
   });
 
   // Fast Dry additive (2 gallons per 125 gallons concentrate)
-  const fastDryNeeded = Math.ceil((concentrateNeeded / 125) * 2);
+  const fastDryRatio = getSetting(settings, 'FAST_DRY_RATIO');
+  const fastDryNeeded = Math.ceil((concentrateNeeded / 125) * fastDryRatio);
   if (fastDryNeeded > 0) {
     const fastDryBuckets = Math.ceil(fastDryNeeded / 5); // 5-gallon buckets
     materials.push({
       name: 'Fast Dry Additive',
       quantity: fastDryBuckets,
       unit: 'bucket',
-      unitCost: MATERIAL_COSTS.FAST_DRY,
-      totalCost: fastDryBuckets * MATERIAL_COSTS.FAST_DRY
+      unitCost: getSetting(settings, 'FAST_DRY'),
+      totalCost: fastDryBuckets * getSetting(settings, 'FAST_DRY')
     });
   }
 
   // Oil spot primer if needed
   if (hasOilSpots) {
     const oilSpotArea = squareFootage * 0.1; // Assume 10% of area has oil spots
-    const prepSealNeeded = oilSpotArea / APPLICATION_RATES.PREP_SEAL_COVERAGE;
+    const prepSealCoverage = getSetting(settings, 'PREP_SEAL_COVERAGE');
+    const prepSealNeeded = oilSpotArea / prepSealCoverage;
     const prepSealBuckets = Math.ceil(prepSealNeeded / 5); // 5-gallon buckets
     
     materials.push({
       name: 'Prep Seal (Oil Spot Primer)',
       quantity: prepSealBuckets,
       unit: 'bucket',
-      unitCost: MATERIAL_COSTS.PREP_SEAL,
-      totalCost: prepSealBuckets * MATERIAL_COSTS.PREP_SEAL
+      unitCost: getSetting(settings, 'PREP_SEAL'),
+      totalCost: prepSealBuckets * getSetting(settings, 'PREP_SEAL')
     });
   }
 
   return materials;
 }
 
-export function calculateCrackRepairMaterials(linearFootage: number, severity: 'LIGHT' | 'MEDIUM' | 'HEAVY') {
+export function calculateCrackRepairMaterials(
+  linearFootage: number, 
+  severity: 'LIGHT' | 'MEDIUM' | 'HEAVY',
+  settings: BusinessSettings | null = null
+) {
   const materials: MaterialCalculation[] = [];
   
   // Calculate crack filler needed based on severity
@@ -167,8 +267,8 @@ export function calculateCrackRepairMaterials(linearFootage: number, severity: '
     name: 'SealMaster FlexMaster Crack Sealant',
     quantity: Math.ceil(crackFillerGallons),
     unit: 'gallon',
-    unitCost: MATERIAL_COSTS.FLEXMASTER_CRACK,
-    totalCost: Math.ceil(crackFillerGallons) * MATERIAL_COSTS.FLEXMASTER_CRACK
+    unitCost: getSetting(settings, 'FLEXMASTER_CRACK'),
+    totalCost: Math.ceil(crackFillerGallons) * getSetting(settings, 'FLEXMASTER_CRACK')
   });
 
   // Propane for hot pour machines (1 tank per 1000 linear feet)
@@ -177,34 +277,44 @@ export function calculateCrackRepairMaterials(linearFootage: number, severity: '
     name: 'Propane Tank Refill',
     quantity: propaneTanks,
     unit: 'tank',
-    unitCost: MATERIAL_COSTS.PROPANE_REFILL,
-    totalCost: propaneTanks * MATERIAL_COSTS.PROPANE_REFILL
+    unitCost: getSetting(settings, 'PROPANE_REFILL'),
+    totalCost: propaneTanks * getSetting(settings, 'PROPANE_REFILL')
   });
 
   return materials;
 }
 
-export function calculateLineStripingMaterials(numberOfStalls: number) {
+export function calculateLineStripingMaterials(
+  numberOfStalls: number,
+  settings: BusinessSettings | null = null
+) {
   const materials: MaterialCalculation[] = [];
   
   // Calculate total linear feet needed
-  const totalLinearFeet = numberOfStalls * APPLICATION_RATES.STALL_LINEAR_FEET;
+  const stallLinearFeet = getSetting(settings, 'STALL_LINEAR_FEET');
+  const totalLinearFeet = numberOfStalls * stallLinearFeet;
   
   materials.push({
     name: 'Line Striping Paint',
     quantity: totalLinearFeet,
     unit: 'linear_foot',
-    unitCost: MATERIAL_COSTS.LINE_PAINT,
-    totalCost: totalLinearFeet * MATERIAL_COSTS.LINE_PAINT
+    unitCost: getSetting(settings, 'LINE_PAINT'),
+    totalCost: totalLinearFeet * getSetting(settings, 'LINE_PAINT')
   });
 
   return materials;
 }
 
-export function calculatePatchingMaterials(squareFootage: number, patchType: 'hot' | 'cold' = 'hot') {
+export function calculatePatchingMaterials(
+  squareFootage: number, 
+  patchType: 'hot' | 'cold' = 'hot',
+  settings: BusinessSettings | null = null
+) {
   const materials: MaterialCalculation[] = [];
   
-  const costPerSqFt = patchType === 'hot' ? MATERIAL_COSTS.HOT_MIX_ASPHALT : MATERIAL_COSTS.COLD_PATCH;
+  const costPerSqFt = patchType === 'hot' 
+    ? getSetting(settings, 'HOT_MIX_ASPHALT') 
+    : getSetting(settings, 'COLD_PATCH');
   const materialName = patchType === 'hot' ? 'Hot Mix Asphalt' : 'Cold Patch Asphalt';
   
   materials.push({
@@ -218,7 +328,10 @@ export function calculatePatchingMaterials(squareFootage: number, patchType: 'ho
   return materials;
 }
 
-export function calculateEstimate(input: EstimateInput): EstimateResult {
+export function calculateEstimate(
+  input: EstimateInput, 
+  settings: BusinessSettings | null = null
+): EstimateResult {
   let materials: MaterialCalculation[] = [];
   let laborHours = 0;
 
@@ -226,71 +339,87 @@ export function calculateEstimate(input: EstimateInput): EstimateResult {
   switch (input.jobType) {
     case 'SEALCOATING':
       if (input.squareFootage) {
-        materials = calculateSealcoatingMaterials(input.squareFootage, input.hasOilSpots || false);
-        laborHours = input.squareFootage / LABOR_RATES.SEALCOAT_EFFICIENCY * 2; // 2-person crew
+        materials = calculateSealcoatingMaterials(input.squareFootage, input.hasOilSpots || false, settings);
+        const sealcoatEfficiency = getSetting(settings, 'SEALCOAT_EFFICIENCY');
+        laborHours = input.squareFootage / sealcoatEfficiency * 2; // 2-person crew
       }
       break;
       
     case 'CRACK_REPAIR':
       if (input.linearFootage) {
-        materials = calculateCrackRepairMaterials(input.linearFootage, input.crackSeverity || 'MEDIUM');
-        laborHours = input.linearFootage / LABOR_RATES.CRACK_FILL_EFFICIENCY;
+        materials = calculateCrackRepairMaterials(input.linearFootage, input.crackSeverity || 'MEDIUM', settings);
+        const crackFillEfficiency = getSetting(settings, 'CRACK_FILL_EFFICIENCY');
+        laborHours = input.linearFootage / crackFillEfficiency;
       }
       break;
       
     case 'LINE_STRIPING':
       if (input.numberOfStalls) {
-        materials = calculateLineStripingMaterials(input.numberOfStalls);
-        laborHours = (input.numberOfStalls * APPLICATION_RATES.STALL_LINEAR_FEET) / LABOR_RATES.STRIPING_EFFICIENCY;
+        materials = calculateLineStripingMaterials(input.numberOfStalls, settings);
+        const stallLinearFeet = getSetting(settings, 'STALL_LINEAR_FEET');
+        const stripingEfficiency = getSetting(settings, 'STRIPING_EFFICIENCY');
+        laborHours = (input.numberOfStalls * stallLinearFeet) / stripingEfficiency;
       }
       break;
       
     case 'ASPHALT_PATCHING':
       if (input.squareFootage) {
-        materials = calculatePatchingMaterials(input.squareFootage);
-        laborHours = input.squareFootage / LABOR_RATES.PATCHING_EFFICIENCY;
+        materials = calculatePatchingMaterials(input.squareFootage, 'hot', settings);
+        const patchingEfficiency = getSetting(settings, 'PATCHING_EFFICIENCY');
+        laborHours = input.squareFootage / patchingEfficiency;
       }
       break;
       
     case 'COMBINATION':
       // Handle combination jobs
       if (input.squareFootage) {
-        materials.push(...calculateSealcoatingMaterials(input.squareFootage, input.hasOilSpots || false));
-        laborHours += input.squareFootage / LABOR_RATES.SEALCOAT_EFFICIENCY * 2;
+        materials.push(...calculateSealcoatingMaterials(input.squareFootage, input.hasOilSpots || false, settings));
+        const sealcoatEfficiency = getSetting(settings, 'SEALCOAT_EFFICIENCY');
+        laborHours += input.squareFootage / sealcoatEfficiency * 2;
       }
       if (input.linearFootage) {
-        materials.push(...calculateCrackRepairMaterials(input.linearFootage, input.crackSeverity || 'MEDIUM'));
-        laborHours += input.linearFootage / LABOR_RATES.CRACK_FILL_EFFICIENCY;
+        materials.push(...calculateCrackRepairMaterials(input.linearFootage, input.crackSeverity || 'MEDIUM', settings));
+        const crackFillEfficiency = getSetting(settings, 'CRACK_FILL_EFFICIENCY');
+        laborHours += input.linearFootage / crackFillEfficiency;
       }
       if (input.numberOfStalls) {
-        materials.push(...calculateLineStripingMaterials(input.numberOfStalls));
-        laborHours += (input.numberOfStalls * APPLICATION_RATES.STALL_LINEAR_FEET) / LABOR_RATES.STRIPING_EFFICIENCY;
+        materials.push(...calculateLineStripingMaterials(input.numberOfStalls, settings));
+        const stallLinearFeet = getSetting(settings, 'STALL_LINEAR_FEET');
+        const stripingEfficiency = getSetting(settings, 'STRIPING_EFFICIENCY');
+        laborHours += (input.numberOfStalls * stallLinearFeet) / stripingEfficiency;
       }
       break;
   }
 
   // Calculate costs
   const materialCost = materials.reduce((sum, material) => sum + material.totalCost, 0);
-  const laborCost = laborHours * LABOR_RATES.EMPLOYEE_RATE;
+  const employeeRate = getSetting(settings, 'EMPLOYEE_RATE');
+  const laborCost = laborHours * employeeRate;
   
   // Calculate travel
   const distance = calculateDistance(input.businessAddress, input.jobAddress);
-  const travelCost = (distance * 2) / EQUIPMENT_COSTS.VEHICLE_MPG * EQUIPMENT_COSTS.FUEL_PRICE; // Round trip
+  const vehicleMpg = getSetting(settings, 'VEHICLE_MPG');
+  const fuelPrice = getSetting(settings, 'FUEL_PRICE');
+  const travelCost = (distance * 2) / vehicleMpg * fuelPrice; // Round trip
   
   // Calculate equipment/fuel costs
-  const fuelCost = laborHours * EQUIPMENT_COSTS.FUEL_OPERATIONAL * EQUIPMENT_COSTS.FUEL_PRICE;
-  const equipmentCost = laborHours * 5; // $5/hour equipment depreciation/maintenance
+  const fuelOperational = getSetting(settings, 'FUEL_OPERATIONAL');
+  const fuelCost = laborHours * fuelOperational * fuelPrice;
+  const equipmentHourlyRate = getSetting(settings, 'EQUIPMENT_HOURLY_RATE');
+  const equipmentCost = laborHours * equipmentHourlyRate;
   
   const subtotal = materialCost + laborCost + fuelCost + equipmentCost + travelCost;
-  const overhead = subtotal * 0.15; // 15% overhead
-  const profit = subtotal * 0.25; // 25% profit margin
+  const overheadPercentage = getSetting(settings, 'OVERHEAD_PERCENTAGE') / 100;
+  const profitPercentage = getSetting(settings, 'PROFIT_PERCENTAGE') / 100;
+  const overhead = subtotal * overheadPercentage;
+  const profit = subtotal * profitPercentage;
   const total = subtotal + overhead + profit;
 
   return {
     materials,
     labor: {
       hours: laborHours,
-      rate: LABOR_RATES.EMPLOYEE_RATE,
+      rate: employeeRate,
       cost: laborCost
     },
     equipment: {

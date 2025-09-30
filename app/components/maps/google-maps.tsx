@@ -42,28 +42,25 @@ export function GoogleMaps({
   useEffect(() => {
     const initMap = async () => {
       try {
-        // Use the new functional API
-        const { Loader } = await import('@googlemaps/js-api-loader');
-        
-        const loader = new Loader({
-          apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-          version: 'weekly',
-          libraries: ['places', 'drawing', 'geometry']
-        });
+        // Check if Google Maps is already loaded
+        if (!window.google) {
+          // Use the Loader to load Google Maps
+          const { Loader } = await import('@googlemaps/js-api-loader');
+          
+          const loader = new Loader({
+            apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+            version: 'weekly',
+            libraries: ['places', 'drawing', 'geometry']
+          });
 
-        // Import libraries using the new API
-        // @ts-ignore
-        const [{ Map }, { DrawingManager }] = await Promise.all([
           // @ts-ignore
-          loader.importLibrary('maps'),
-          // @ts-ignore
-          loader.importLibrary('drawing')
-        ]);
+          await loader.load();
+        }
 
-        if (!mapRef.current) return;
+        if (!mapRef.current || !window.google) return;
 
         // Initialize map
-        const mapInstance = new Map(mapRef.current, {
+        const mapInstance = new google.maps.Map(mapRef.current, {
           center,
           zoom,
           mapTypeId: 'hybrid', // Hybrid satellite/road view
@@ -82,7 +79,7 @@ export function GoogleMaps({
 
         // Initialize drawing manager for measuring
         if (enableMeasuring) {
-          const drawingManagerInstance = new DrawingManager({
+          const drawingManagerInstance = new google.maps.drawing.DrawingManager({
             drawingMode: null,
             drawingControl: true,
             drawingControlOptions: {
@@ -115,9 +112,8 @@ export function GoogleMaps({
           drawingManagerInstance.setMap(mapInstance);
           setDrawingManager(drawingManagerInstance);
 
-          // Load geometry library
-          // @ts-ignore
-          const { spherical } = await loader.importLibrary('geometry') as any;
+          // Use geometry library
+          const spherical = google.maps.geometry.spherical;
 
           // Handle overlay complete
           google.maps.event.addListener(drawingManagerInstance, 'overlaycomplete', (event: any) => {

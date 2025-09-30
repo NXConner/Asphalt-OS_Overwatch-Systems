@@ -27,7 +27,7 @@ import {
   Truck,
   Wrench,
 } from 'lucide-react';
-import { calculateEstimate, EstimateResult, EstimateInput } from '@/lib/business-logic';
+import { calculateEstimate, EstimateResult, EstimateInput, BUSINESS_ADDRESS, BusinessSettings } from '@/lib/business-logic';
 
 interface EstimateDialogProps {
   open: boolean;
@@ -43,16 +43,42 @@ export function EstimateDialog({
   const [loading, setLoading] = useState(false);
   const [estimateResult, setEstimateResult] = useState<EstimateResult | null>(null);
   const [savedEstimate, setSavedEstimate] = useState<any>(null);
+  const [businessSettings, setBusinessSettings] = useState<BusinessSettings | null>(null);
 
-  // Calculate estimate when job changes
+  // Fetch business settings when dialog opens
   useEffect(() => {
-    if (job && open) {
+    if (open) {
+      fetchBusinessSettings();
+    }
+  }, [open]);
+
+  // Calculate estimate when job or settings change
+  useEffect(() => {
+    if (job && open && businessSettings) {
       calculateJobEstimate();
     }
-  }, [job, open]);
+  }, [job, open, businessSettings]);
+
+  const fetchBusinessSettings = async () => {
+    try {
+      const response = await fetch('/api/business-settings');
+      if (response.ok) {
+        const settings = await response.json();
+        const settingsMap = settings.reduce((acc: BusinessSettings, setting: any) => {
+          acc[setting.key] = parseFloat(setting.value);
+          return acc;
+        }, {});
+        setBusinessSettings(settingsMap);
+      }
+    } catch (error) {
+      console.error('Error fetching business settings:', error);
+      // Use default settings if fetch fails
+      setBusinessSettings({});
+    }
+  };
 
   const calculateJobEstimate = () => {
-    if (!job) return;
+    if (!job || !businessSettings) return;
 
     const input: EstimateInput = {
       jobType: job.type,
@@ -62,10 +88,10 @@ export function EstimateDialog({
       hasOilSpots: job.hasOilSpots,
       crackSeverity: job.crackSeverity || 'MEDIUM',
       jobAddress: job.address,
-      businessAddress: '337 Ayers Orchard Road, Stuart, VA 24171'
+      businessAddress: BUSINESS_ADDRESS
     };
 
-    const result = calculateEstimate(input);
+    const result = calculateEstimate(input, businessSettings);
     setEstimateResult(result);
   };
 
