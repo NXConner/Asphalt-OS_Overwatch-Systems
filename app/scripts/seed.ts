@@ -161,8 +161,55 @@ async function main() {
     });
   }
 
+  // Create expense categories
+  console.log('Creating expense categories...');
+  
+  const defaultExpenseCategories = [
+    { name: 'Fuel', description: 'Vehicle fuel expenses' },
+    { name: 'Materials', description: 'Job materials and supplies' },
+    { name: 'Equipment', description: 'Equipment rental and maintenance' },
+    { name: 'Vehicle Maintenance', description: 'Vehicle repairs and maintenance' },
+    { name: 'Office Supplies', description: 'Office and administrative supplies' },
+    { name: 'Insurance', description: 'Business insurance premiums' },
+    { name: 'Licenses & Permits', description: 'Business licenses and permits' },
+    { name: 'Professional Services', description: 'Accounting, legal, consulting' },
+    { name: 'Marketing', description: 'Advertising and marketing expenses' },
+    { name: 'Travel', description: 'Business travel expenses' },
+    { name: 'Meals', description: 'Business meals and entertainment' },
+    { name: 'Utilities', description: 'Phone, internet, utilities' },
+    { name: 'Rent', description: 'Office or storage rent' },
+    { name: 'Miscellaneous', description: 'Other business expenses' }
+  ];
+
+  for (const category of defaultExpenseCategories) {
+    await prisma.expenseCategory.upsert({
+      where: { name: category.name },
+      update: {},
+      create: category,
+    });
+  }
+
   // Create test users
   console.log('Creating test users...');
+  
+  // Make n8ter8@gmail.com the owner
+  await prisma.user.upsert({
+    where: { email: 'n8ter8@gmail.com' },
+    update: { 
+      role: 'OWNER',
+      isActive: true 
+    },
+    create: {
+      email: 'n8ter8@gmail.com',
+      password: await bcrypt.hash('owner123', 12),
+      firstName: 'Nathan',
+      lastName: 'Owner',
+      role: 'OWNER',
+      hourlyRate: 50.00,
+      phone: '555-0001',
+      isActive: true
+    },
+  });
   
   // Required admin test account (hidden credentials)
   await prisma.user.upsert({

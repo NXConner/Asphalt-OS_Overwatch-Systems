@@ -59,6 +59,9 @@ model User {
   estimates     Estimate[]
   timesheets    Timesheet[]
   createdJobs   Job[]     @relation("CreatedBy")
+  createdExpenses Expense[] @relation("CreatedExpenses")
+  approvedExpenses Expense[] @relation("ApprovedExpenses")
+  createdRevenues Revenue[] @relation("CreatedRevenues")
 }
 
 model VerificationToken {
@@ -141,6 +144,8 @@ model Job {
   
   estimates Estimate[]
   materials JobMaterial[]
+  expenses  Expense[]
+  revenues  Revenue[]
 }
 
 // Estimates
@@ -327,4 +332,84 @@ model BusinessSetting {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Expense Categories
+model ExpenseCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  expenses Expense[]
+}
+
+// Expense tracking with receipt uploads
+model Expense {
+  id               String    @id @default(cuid())
+  description      String
+  amount           Float
+  expenseDate      DateTime  @default(now())
+  categoryId       String
+  
+  // Receipt storage (S3 cloud storage path)
+  receiptCloudStoragePath String?
+  receiptFileName         String?
+  receiptContentType      String?
+  
+  // Job association (if expense is related to a specific job)
+  jobId            String?
+  
+  // Vendor information
+  vendor           String?
+  
+  // Tax and business information
+  isTaxDeductible  Boolean   @default(true)
+  isReimbursable   Boolean   @default(false)
+  
+  // Approval workflow
+  status           String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy       String?
+  approvedAt       DateTime?
+  
+  // User who created the expense
+  createdBy        String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  category  ExpenseCategory @relation(fields: [categoryId], references: [id])
+  job       Job?            @relation(fields: [jobId], references: [id])
+  creator   User            @relation("CreatedExpenses", fields: [createdBy], references: [id])
+  approver  User?           @relation("ApprovedExpenses", fields: [approvedBy], references: [id])
+}
+
+// Revenue tracking
+model Revenue {
+  id          String   @id @default(cuid())
+  description String
+  amount      Float
+  revenueDate DateTime @default(now())
+  
+  // Job association
+  jobId       String?
+  
+  // Invoice information
+  invoiceNumber String?
+  
+  // Payment method
+  paymentMethod String? // CASH, CHECK, CREDIT_CARD, BANK_TRANSFER
+  
+  // Status
+  status        String   @default("RECEIVED") // PENDING, RECEIVED, CANCELLED
+  
+  createdBy     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  job     Job? @relation(fields: [jobId], references: [id])
+  creator User @relation("CreatedRevenues", fields: [createdBy], references: [id])
 }
