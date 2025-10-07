@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
 import { MapMarker } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -42,22 +41,72 @@ export function GoogleMaps({
   useEffect(() => {
     const initMap = async () => {
       try {
-        // Check if Google Maps is already loaded
-        if (!window.google) {
-          // Use the Loader to load Google Maps
-          const { Loader } = await import('@googlemaps/js-api-loader');
+        // Load Google Maps script first (regardless of ref status)
+        if (!window.google || !window.google.maps) {
+          // Check if script is already being loaded
+          const existingScript = document.querySelector(
+            'script[src*="maps.googleapis.com"]'
+          );
           
-          const loader = new Loader({
-            apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-            version: 'weekly',
-            libraries: ['places', 'drawing', 'geometry']
-          });
-
-          // @ts-ignore
-          await loader.load();
+          if (!existingScript) {
+            // Load Google Maps script directly
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,drawing,geometry&v=weekly`;
+            script.async = true;
+            script.defer = true;
+            
+            await new Promise<void>((resolve, reject) => {
+              script.onload = () => {
+                console.log('Google Maps script loaded successfully');
+                resolve();
+              };
+              script.onerror = (error) => {
+                console.error('Failed to load Google Maps script:', error);
+                reject(new Error('Failed to load Google Maps script'));
+              };
+              document.head.appendChild(script);
+            });
+          } else {
+            // Wait for the existing script to load
+            await new Promise<void>((resolve) => {
+              const checkLoaded = setInterval(() => {
+                if (window.google && window.google.maps) {
+                  clearInterval(checkLoaded);
+                  resolve();
+                }
+              }, 100);
+              
+              // Timeout after 10 seconds
+              setTimeout(() => {
+                clearInterval(checkLoaded);
+                resolve();
+              }, 10000);
+            });
+          }
         }
 
-        if (!mapRef.current || !window.google) return;
+        // Wait for ref to be ready (with timeout)
+        let retries = 0;
+        while (!mapRef.current && retries < 50) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          retries++;
+        }
+
+        if (!mapRef.current) {
+          console.error('Map ref is not available after waiting');
+          setError('Map container not ready');
+          setLoading(false);
+          return;
+        }
+
+        if (!window.google || !window.google.maps) {
+          console.error('Google Maps API not available after script load');
+          setError('Failed to load Google Maps API. Please check your API key and enabled APIs.');
+          setLoading(false);
+          return;
+        }
+
+        console.log('Initializing map with ref and Google Maps API ready');
 
         // Initialize map
         const mapInstance = new google.maps.Map(mapRef.current, {
@@ -252,31 +301,30 @@ export function GoogleMaps({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-muted">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading Google Maps...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-muted">
-        <Card className="p-6 text-center">
-          <p className="text-destructive mb-2">Failed to load map</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="relative w-full h-full">
+      {/* Always render the map div so ref is available */}
       <div ref={mapRef} className="w-full h-full" />
+      
+      {/* Loading overlay */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted z-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading Google Maps...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error overlay */}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted z-50">
+          <Card className="p-6 text-center">
+            <p className="text-destructive mb-2">Failed to load map</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </Card>
+        </div>
+      )}
       
       {/* Measured area display */}
       {enableMeasuring && measuredArea > 0 && (
