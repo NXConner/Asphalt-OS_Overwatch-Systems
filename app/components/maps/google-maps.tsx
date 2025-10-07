@@ -122,6 +122,7 @@ export function GoogleMaps({
           streetViewControl: true,
           fullscreenControl: true,
           clickableIcons: false,
+          gestureHandling: 'greedy', // Enable scroll wheel zoom without ctrl key
         });
 
         setMap(mapInstance);

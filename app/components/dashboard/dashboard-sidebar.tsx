@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,6 +46,7 @@ export function DashboardSidebar({
   onDirections 
 }: DashboardSidebarProps) {
   const { data: session } = useSession();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
@@ -86,29 +88,29 @@ export function DashboardSidebar({
       onClick?: () => void;
       count?: number;
     }> = [
-      { icon: MapPin, label: 'Map View', active: true },
+      { icon: MapPin, label: 'Map View', active: true, onClick: () => router.push('/dashboard') },
       { icon: Plus, label: 'New Job', onClick: onNewJob },
     ];
 
     if (session?.user?.role === 'ADMIN' || session?.user?.role === 'OWNER') {
       return [
         ...baseItems,
-        { icon: Building2, label: 'Jobs', count: jobs?.length || 0 },
-        { icon: Calculator, label: 'Estimates' },
-        { icon: Users, label: 'Employees' },
-        { icon: DollarSign, label: 'Payroll' },
-        { icon: FileText, label: 'Invoices' },
-        { icon: BarChart3, label: 'Reports' },
-        { icon: Calendar, label: 'Schedule' },
-        { icon: Settings, label: 'Settings' },
+        { icon: Building2, label: 'Jobs', count: jobs?.length || 0, onClick: () => router.push('/dashboard') },
+        { icon: Calculator, label: 'Estimates', onClick: () => router.push('/dashboard') },
+        { icon: Users, label: 'Employees', onClick: () => router.push('/hr') },
+        { icon: DollarSign, label: 'Payroll', onClick: () => router.push('/payroll') },
+        { icon: FileText, label: 'Invoices', onClick: () => router.push('/financials') },
+        { icon: BarChart3, label: 'Reports', onClick: () => router.push('/reports') },
+        { icon: Calendar, label: 'Schedule', onClick: () => router.push('/schedule') },
+        { icon: Settings, label: 'Settings', onClick: () => router.push('/settings') },
       ];
     }
 
     return [
       ...baseItems,
-      { icon: Building2, label: 'My Jobs', count: filteredJobs?.length || 0 },
-      { icon: Clock, label: 'Timesheet' },
-      { icon: Calendar, label: 'Schedule' },
+      { icon: Building2, label: 'My Jobs', count: filteredJobs?.length || 0, onClick: () => router.push('/dashboard') },
+      { icon: Clock, label: 'Timesheet', onClick: () => router.push('/dashboard') },
+      { icon: Calendar, label: 'Schedule', onClick: () => router.push('/schedule') },
     ];
   };
 
