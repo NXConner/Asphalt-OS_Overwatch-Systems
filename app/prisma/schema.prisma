@@ -413,3 +413,417 @@ model Revenue {
   job     Job? @relation(fields: [jobId], references: [id])
   creator User @relation("CreatedRevenues", fields: [createdBy], references: [id])
 }
+
+// Fleet Management - Vehicles
+model Vehicle {
+  id          String   @id @default(cuid())
+  name        String
+  type        VehicleType @default(TRUCK)
+  make        String
+  model       String
+  year        Int
+  vin         String?
+  licensePlate String?
+  
+  // Registration and inspection
+  registrationExpiration DateTime?
+  inspectionExpiration   DateTime?
+  
+  // Insurance
+  insuranceExpiration    DateTime?
+  insuranceProvider      String?
+  insurancePolicyNumber  String?
+  insuranceCoverage      String? // LIABILITY, COMPREHENSIVE, COLLISION, etc.
+  
+  // Maintenance tracking
+  lastOilChange          DateTime?
+  oilChangeMileage       Int?
+  oilChangeInterval      Int @default(5000) // miles
+  currentMileage         Int @default(0)
+  
+  // Status
+  status                 VehicleStatus @default(ACTIVE)
+  
+  // Additional details
+  purchaseDate           DateTime?
+  purchasePrice          Float?
+  notes                  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  maintenanceRecords MaintenanceRecord[]
+  inspectionResults  VehicleInspection[]
+  fuelRecords        FuelRecord[]
+}
+
+enum VehicleType {
+  TRUCK
+  TRAILER
+  EQUIPMENT
+  OTHER
+}
+
+enum VehicleStatus {
+  ACTIVE
+  MAINTENANCE
+  OUT_OF_SERVICE
+  RETIRED
+}
+
+// Fleet Management - Maintenance Records
+model MaintenanceRecord {
+  id          String   @id @default(cuid())
+  vehicleId   String
+  type        MaintenanceType
+  description String
+  cost        Float
+  
+  // Timing
+  performedAt     DateTime?
+  mileage         Int?
+  
+  // Next service
+  nextDueDate     DateTime?
+  nextDueMileage  Int?
+  
+  // Vendor information
+  performedBy     String?
+  vendorName      String?
+  
+  // Receipt/invoice
+  receiptCloudStoragePath String?
+  receiptFileName         String?
+  
+  notes           String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+enum MaintenanceType {
+  OIL_CHANGE
+  TIRE_ROTATION
+  BRAKE_SERVICE
+  INSPECTION
+  REPAIR
+  PREVENTIVE
+  OTHER
+}
+
+// Fleet Management - Vehicle Inspections
+model VehicleInspection {
+  id              String   @id @default(cuid())
+  vehicleId       String
+  inspectorName   String
+  inspectionDate  DateTime
+  mileage         Int
+  
+  // Results stored as JSON
+  results         Json // Array of {itemId, itemName, category, status, notes}
+  
+  overallStatus   InspectionStatus
+  notes           String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+enum InspectionStatus {
+  PASS
+  FAIL
+  CONDITIONAL
+}
+
+// Fleet Management - Fuel Records
+model FuelRecord {
+  id          String   @id @default(cuid())
+  vehicleId   String
+  fuelDate    DateTime @default(now())
+  gallons     Float
+  costPerGallon Float
+  totalCost   Float
+  mileage     Int?
+  
+  // Location
+  station     String?
+  
+  // Receipt
+  receiptCloudStoragePath String?
+  receiptFileName         String?
+  
+  notes       String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+// Employee Location Tracking
+model EmployeeLocation {
+  id          String   @id @default(cuid())
+  userId      String
+  latitude    Float
+  longitude   Float
+  accuracy    Float?
+  altitude    Float?
+  speed       Float? // mph
+  heading     Float? // degrees
+  
+  // Metadata
+  timestamp   DateTime @default(now())
+  source      String   @default("GPS") // GPS, NETWORK, MANUAL
+  
+  // Battery and device info
+  batteryLevel Float?
+  deviceInfo   String?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([userId, timestamp])
+  @@index([timestamp])
+}
+
+// Geofence Configurations
+model Geofence {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  
+  // Location
+  latitude    Float
+  longitude   Float
+  radius      Float // meters
+  
+  // Settings
+  isActive    Boolean  @default(true)
+  
+  // Auto clock in/out
+  autoClockIn  Boolean @default(false)
+  autoClockOut Boolean @default(false)
+  
+  // Notifications
+  notifyOnEntry Boolean @default(false)
+  notifyOnExit  Boolean @default(false)
+  
+  // Associated job
+  jobId       String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  geofenceEvents GeofenceEvent[]
+}
+
+// Geofence Events
+model GeofenceEvent {
+  id          String   @id @default(cuid())
+  geofenceId  String
+  userId      String
+  eventType   GeofenceEventType
+  timestamp   DateTime @default(now())
+  
+  // Location details
+  latitude    Float
+  longitude   Float
+  
+  // Actions taken
+  clockedIn   Boolean @default(false)
+  clockedOut  Boolean @default(false)
+  
+  // Associated timesheet
+  timesheetId String?
+  
+  createdAt DateTime @default(now())
+  
+  geofence Geofence @relation(fields: [geofenceId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, timestamp])
+  @@index([geofenceId, timestamp])
+}
+
+enum GeofenceEventType {
+  ENTRY
+  EXIT
+  DWELL
+}
+
+// Weather Alerts
+model WeatherAlert {
+  id          String   @id @default(cuid())
+  alertType   WeatherAlertType
+  severity    WeatherSeverity
+  title       String
+  description String
+  
+  // Location
+  latitude    Float
+  longitude   Float
+  radius      Float @default(50000) // meters (default 50km)
+  
+  // Timing
+  startTime   DateTime
+  endTime     DateTime
+  
+  // Weather data
+  conditions  String? // RAIN, SNOW, THUNDERSTORM, etc.
+  temperature Float?
+  precipitation Float? // inches
+  windSpeed   Float? // mph
+  
+  // Recommendations
+  workRecommendation String? // PROCEED, CAUTION, DELAY, CANCEL
+  
+  // Status
+  acknowledged Boolean @default(false)
+  active       Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([latitude, longitude, active])
+  @@index([startTime, endTime])
+}
+
+enum WeatherAlertType {
+  RAIN
+  HEAVY_RAIN
+  THUNDERSTORM
+  SNOW
+  EXTREME_HEAT
+  EXTREME_COLD
+  HIGH_WIND
+  FROST
+  GENERAL
+}
+
+enum WeatherSeverity {
+  LOW
+  MODERATE
+  HIGH
+  SEVERE
+}
+
+// Premium Subscription Tiers
+model SubscriptionTier {
+  id          String   @id @default(cuid())
+  name        String   @unique // FREE, BASIC, PROFESSIONAL, ENTERPRISE
+  displayName String
+  description String?
+  price       Float
+  billingPeriod String @default("MONTHLY") // MONTHLY, YEARLY
+  
+  // Feature limits
+  maxEmployees        Int @default(-1) // -1 = unlimited
+  maxVehicles         Int @default(-1)
+  maxJobs             Int @default(-1)
+  
+  // Features
+  weatherAlerts       Boolean @default(false)
+  gpsTracking         Boolean @default(false)
+  geofencing          Boolean @default(false)
+  advancedReporting   Boolean @default(false)
+  customEstimates     Boolean @default(false)
+  apiAccess           Boolean @default(false)
+  prioritySupport     Boolean @default(false)
+  
+  // Status
+  isActive            Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// User Subscriptions
+model UserSubscription {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  tierName          String
+  
+  // Billing
+  status            SubscriptionStatus @default(ACTIVE)
+  startDate         DateTime @default(now())
+  endDate           DateTime?
+  renewalDate       DateTime?
+  
+  // Payment
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIAL
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+// Employee Status Tracking
+model EmployeeStatus {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  status      EmployeeClockStatus @default(CLOCKED_OUT)
+  
+  // Current timesheet
+  currentTimesheetId String?
+  
+  // Last known location
+  lastLatitude       Float?
+  lastLongitude      Float?
+  lastLocationUpdate DateTime?
+  
+  // Device info
+  isOnline           Boolean @default(false)
+  lastSeen           DateTime?
+  deviceToken        String? // For push notifications
+  
+  updatedAt DateTime @updatedAt
+  
+  @@index([status])
+  @@index([isOnline])
+}
+
+enum EmployeeClockStatus {
+  CLOCKED_IN
+  CLOCKED_OUT
+  ON_BREAK
+}
+
+// End of Day Reports
+model EndOfDayReport {
+  id          String   @id @default(cuid())
+  userId      String
+  reportDate  DateTime
+  
+  // Hours
+  totalHours      Float
+  regularHours    Float
+  overtimeHours   Float
+  
+  // Locations visited (stored as JSON array)
+  locations       Json // Array of {latitude, longitude, timestamp, duration}
+  
+  // Distance traveled
+  totalDistance   Float? // miles
+  
+  // Jobs worked
+  jobsWorked      Json // Array of {jobId, jobTitle, hours}
+  
+  // Summary
+  notes           String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, reportDate])
+  @@index([reportDate])
+}
