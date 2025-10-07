@@ -258,6 +258,8 @@ export default function FleetPage() {
       <DashboardHeader
         onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         onSettingsClick={() => router.push('/settings')}
+        onTimesheetClick={() => {}}
+        onDirectionsClick={() => {}}
       />
       
       <div className="flex flex-1 overflow-hidden">

@@ -210,6 +210,8 @@ export default function HRPage() {
       <DashboardHeader
         onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         onSettingsClick={() => router.push('/settings')}
+        onTimesheetClick={() => {}}
+        onDirectionsClick={() => {}}
       />
       
       <div className="flex flex-1 overflow-hidden">
@@ -575,6 +577,7 @@ function EmployeeDialog({
       hireDate: formData.hireDate ? new Date(formData.hireDate) : undefined,
       licenseExpiration: formData.licenseExpiration ? new Date(formData.licenseExpiration) : undefined,
       hourlyRate: parseFloat(formData.hourlyRate) || 0,
+      status: formData.status as "ACTIVE" | "INACTIVE" | "TERMINATED",
     };
 
     onSave(payload);
