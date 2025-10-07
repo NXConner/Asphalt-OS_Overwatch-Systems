@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MapMarker } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { MeasurementTools } from '@/components/map/measurement-tools';
 
 interface GoogleMapsProps {
   markers?: MapMarker[];
@@ -14,6 +15,8 @@ interface GoogleMapsProps {
   center?: { lat: number; lng: number };
   zoom?: number;
   enableMeasuring?: boolean;
+  enableAISurfaceDetection?: boolean;
+  jobId?: string;
 }
 
 const BUSINESS_LOCATION = { lat: 36.6484, lng: -80.2737 }; // Stuart, VA
@@ -25,7 +28,9 @@ export function GoogleMaps({
   onAreaMeasured,
   center = BUSINESS_LOCATION,
   zoom = 12,
-  enableMeasuring = false
+  enableMeasuring = false,
+  enableAISurfaceDetection = false,
+  jobId
 }: GoogleMapsProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -317,6 +322,25 @@ export function GoogleMaps({
         </div>
       )}
 
+      {/* Radar Sweep Effect */}
+      {map && (
+        <div className="radar-sweep pointer-events-none" />
+      )}
+
+      {/* Measurement Tools */}
+      {(enableMeasuring || enableAISurfaceDetection) && map && (
+        <MeasurementTools
+          map={map}
+          jobId={jobId}
+          onMeasurementSaved={(measurement) => {
+            if (measurement.area) {
+              setMeasuredArea(measurement.area);
+              onAreaMeasured?.(measurement.area);
+            }
+          }}
+        />
+      )}
+
       {/* Error overlay */}
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted z-50">
@@ -329,7 +353,7 @@ export function GoogleMaps({
       
       {/* Measured area display */}
       {enableMeasuring && measuredArea > 0 && (
-        <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-lg">
+        <div className="absolute top-96 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg animate-in fade-in slide-in-from-right">
           <div className="text-sm font-medium">Measured Area</div>
           <div className="text-lg font-bold text-primary">
             {measuredArea.toLocaleString()} sq ft

@@ -146,6 +146,7 @@ model Job {
   materials JobMaterial[]
   expenses  Expense[]
   revenues  Revenue[]
+  measurements MapMeasurement[]
 }
 
 // Estimates
@@ -826,4 +827,61 @@ model EndOfDayReport {
   
   @@unique([userId, reportDate])
   @@index([reportDate])
+}
+
+// Map Measurements - Saved drawings/measurements on the map
+model MapMeasurement {
+  id          String   @id @default(cuid())
+  name        String
+  type        MeasurementType
+  
+  // Geometry stored as JSON
+  vertices    Json // Array of {lat, lng}
+  
+  // Measurements
+  area        Float? // square feet
+  perimeter   Float? // feet
+  length      Float? // feet
+  width       Float? // feet
+  
+  // AI Detection data
+  detectedType      String? // PARKING_LOT, DRIVEWAY, ROAD, etc.
+  aiConfidence      Float?
+  isAIGenerated     Boolean @default(false)
+  isManuallyAdjusted Boolean @default(false)
+  
+  // Association with job
+  jobId       String?
+  job         Job?    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  // Display settings
+  color       String  @default("#3b82f6")
+  strokeWidth Int     @default(3)
+  fillOpacity Float   @default(0.3)
+  isVisible   Boolean @default(true)
+  
+  // Location
+  centerLat   Float
+  centerLng   Float
+  
+  // User who created it
+  createdBy   String
+  
+  // Notes
+  notes       String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([jobId])
+  @@index([createdBy])
+  @@index([centerLat, centerLng])
+}
+
+enum MeasurementType {
+  POLYGON
+  RECTANGLE
+  CIRCLE
+  LINE
+  POLYLINE
 }

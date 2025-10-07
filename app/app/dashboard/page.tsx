@@ -11,6 +11,7 @@ import { JobDialog } from '@/components/dashboard/job-dialog';
 import { EstimateDialog } from '@/components/dashboard/estimate-dialog';
 import { TimesheetDialog } from '@/components/dashboard/timesheet-dialog';
 import { DirectionsPanel } from '@/components/directions/directions-panel';
+import { ScanLine } from '@/components/ui/scan-line';
 import { MapMarker } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -131,7 +132,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden relative">
+      {/* Advanced UI Effects */}
+      <ScanLine enabled={true} />
+      
       <DashboardHeader 
         onTimesheetClick={() => setShowTimesheetDialog(true)}
         onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -152,14 +156,20 @@ export default function DashboardPage() {
           onDirections={handleDirections}
         />
         
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-hidden relative">
           <GoogleMaps
             markers={markers}
             onMarkerClick={handleMarkerClick}
             onMapClick={handleMapClick}
             enableMeasuring={true}
+            enableAISurfaceDetection={true}
+            jobId={selectedJob?.id}
             onAreaMeasured={(area) => {
               console.log('Area measured:', area, 'sq ft');
+              // Auto-update selected job with measured area
+              if (selectedJob) {
+                setSelectedJob({...selectedJob, squareFootage: area});
+              }
             }}
           />
         </main>
