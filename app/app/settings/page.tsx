@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Save, ArrowLeft, DollarSign, Settings, Wrench, Percent, Map } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, DollarSign, Settings, Wrench, Percent, Map, Sparkles } from 'lucide-react';
 
 interface BusinessSetting {
   id: string;
@@ -305,6 +305,33 @@ export default function SettingsPage() {
                   Choose how the map is displayed on the dashboard. Changes take effect immediately.
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Separator className="my-8" />
+
+        {/* Glass Effects */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Glass Morphism Effects
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Configure translucent glass effects for the topbar and sidebar with adjustable transparency, blur, and styles like frosty, smokey, steamy, or condensation.
+              </p>
+              <Button
+                variant="default"
+                onClick={() => router.push('/settings/glass-effects')}
+                className="w-full sm:w-auto"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Configure Glass Effects
+              </Button>
             </div>
           </CardContent>
         </Card>

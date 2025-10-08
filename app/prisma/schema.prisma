@@ -65,6 +65,14 @@ model User {
   approvedExpenses Expense[] @relation("ApprovedExpenses")
   createdRevenues Revenue[] @relation("CreatedRevenues")
   createdBids Bid[] @relation("BidCreator")
+  
+  // Employee tracking relations
+  employeeLocations EmployeeLocation[] @relation("EmployeeLocationTracking")
+  employeeMovements EmployeeMovement[] @relation("EmployeeMovementHistory")
+  employeeTracking  EmployeeTracking[] @relation("EmployeeTrackingStats")
+  phoneUsage        PhoneUsage[] @relation("PhoneUsageTracking")
+  complianceViolations ComplianceViolation[] @relation("ComplianceViolations")
+  employeeCard      EmployeeCard? @relation("EmployeeCard")
 }
 
 model VerificationToken {
@@ -526,6 +534,7 @@ model FuelRecord {
 model EmployeeLocation {
   id          String   @id @default(cuid())
   userId      String
+  user        User     @relation("EmployeeLocationTracking", fields: [userId], references: [id], onDelete: Cascade)
   latitude    Float
   longitude   Float
   accuracy    Float?
@@ -533,18 +542,29 @@ model EmployeeLocation {
   speed       Float? // mph
   heading     Float? // degrees
   
+  // Movement status
+  isMoving      Boolean  @default(false)
+  isStationary  Boolean  @default(false)
+  isDriving     Boolean  @default(false)
+  isPassenger   Boolean  @default(false)
+  
   // Metadata
   timestamp   DateTime @default(now())
   source      String   @default("GPS") // GPS, NETWORK, MANUAL
   
   // Battery and device info
   batteryLevel Float?
-  deviceInfo   String?
+  deviceInfo   Json?
+  
+  // App usage
+  isUsingApp    Boolean  @default(true)
+  appInForeground Boolean @default(true)
   
   createdAt DateTime @default(now())
   
   @@index([userId, timestamp])
   @@index([timestamp])
+  @@index([isMoving])
 }
 
 // Geofence Configurations
@@ -2051,4 +2071,245 @@ enum DroneStatus {
   OUT_OF_SERVICE
   RETIRED
   LOST
+}
+
+// ========================================
+
+// ========================================
+// EMPLOYEE TRACKING & MONITORING SYSTEM
+// ========================================
+
+// Historical movement data for playback
+model EmployeeMovement {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation("EmployeeMovementHistory", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Location
+  latitude      Float
+  longitude     Float
+  accuracy      Float?
+  
+  // Movement data
+  speed         Float?   // mph
+  distance      Float    @default(0) // miles from previous point
+  isDriving     Boolean  @default(false)
+  isPassenger   Boolean  @default(false)
+  isStationary  Boolean  @default(false)
+  
+  // Fuel estimate
+  estimatedFuelCost Float? // dollars
+  
+  timestamp     DateTime
+  createdAt     DateTime @default(now())
+  
+  @@index([userId])
+  @@index([timestamp])
+  @@index([userId, timestamp])
+}
+
+// Daily employee tracking statistics
+model EmployeeTracking {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation("EmployeeTrackingStats", fields: [userId], references: [id], onDelete: Cascade)
+  
+  date          DateTime @db.Date
+  
+  // Time tracking
+  totalTimeTracking  Int @default(0) // minutes
+  totalTimeMoving    Int @default(0) // minutes
+  totalTimeStationary Int @default(0) // minutes
+  totalTimeDriving   Int @default(0) // minutes
+  
+  // Distance and costs
+  totalDistance      Float @default(0) // miles
+  totalFuelCost      Float @default(0) // dollars
+  
+  // Phone usage tracking
+  totalPhoneUsage    Int @default(0) // minutes
+  socialMediaUsage   Int @default(0) // minutes
+  otherAppUsage      Int @default(0) // minutes
+  productiveTime     Int @default(0) // minutes
+  
+  // Cost analysis
+  wastedTimeCost     Float @default(0) // dollars
+  productivityScore  Float @default(100) // percentage
+  
+  // Compliance violations
+  violationsCount    Int @default(0)
+  violationsCost     Float @default(0) // dollars
+  
+  // Savings
+  moneySaved         Float @default(0) // dollars (positive actions)
+  moneyCost          Float @default(0) // dollars (negative actions)
+  netImpact          Float @default(0) // dollars (saved - cost)
+  
+  // Manually editable fields
+  notes              String?
+  manualAdjustment   Float @default(0) // manual cost adjustment
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}
+
+// Phone usage tracking
+model PhoneUsage {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation("PhoneUsageTracking", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // App info
+  appName       String
+  packageId     String?
+  category      PhoneUsageCategory
+  
+  // Usage time
+  startTime     DateTime
+  endTime       DateTime?
+  duration      Int      @default(0) // seconds
+  
+  // Context
+  isDuringWork  Boolean  @default(true)
+  isProductive  Boolean  @default(false)
+  
+  // Cost impact
+  estimatedCost Float    @default(0) // dollars
+  
+  timestamp     DateTime @default(now())
+  
+  @@index([userId])
+  @@index([category])
+  @@index([startTime])
+}
+
+enum PhoneUsageCategory {
+  WORK_APP        // This asphalt app
+  SOCIAL_MEDIA    // Facebook, Instagram, TikTok, etc
+  MESSAGING       // WhatsApp, Messenger, etc
+  ENTERTAINMENT   // YouTube, Netflix, etc
+  GAMES           // Any games
+  PRODUCTIVITY    // Work-related apps
+  NAVIGATION      // Maps, GPS
+  OTHER           // Other apps
+}
+
+// Compliance violations
+model ComplianceViolation {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation("ComplianceViolations", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Violation details
+  type          ViolationType
+  severity      ViolationSeverity
+  description   String
+  
+  // Location and time
+  latitude      Float?
+  longitude     Float?
+  timestamp     DateTime
+  
+  // Speed violations
+  actualSpeed   Float?   // mph
+  speedLimit    Float?   // mph
+  excessSpeed   Float?   // mph
+  
+  // Cost impact
+  estimatedCost Float    @default(0) // dollars
+  actualCost    Float?   // dollars (if citation received)
+  
+  // Resolution
+  isResolved    Boolean  @default(false)
+  resolvedAt    DateTime?
+  resolvedBy    String?
+  resolution    String?
+  
+  // Manual override
+  isManual      Boolean  @default(false)
+  addedBy       String?
+  
+  notes         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([type])
+  @@index([timestamp])
+  @@index([isResolved])
+}
+
+enum ViolationType {
+  SPEEDING
+  UNSAFE_DRIVING
+  UNAUTHORIZED_STOP
+  EXCESSIVE_IDLE
+  OFF_ROUTE
+  LATE_ARRIVAL
+  EARLY_DEPARTURE
+  PHONE_USAGE_WHILE_DRIVING
+  NO_SEATBELT
+  OTHER
+}
+
+enum ViolationSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Employee cards/stats (Player card style)
+model EmployeeCard {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation("EmployeeCard", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Display info
+  nickname      String?
+  avatarUrl     String?
+  badgeColor    String?  // hex color
+  
+  // Stats
+  totalDays     Int      @default(0)
+  perfectDays   Int      @default(0)
+  totalDistance Float    @default(0) // miles
+  totalHours    Float    @default(0) // hours
+  
+  // Performance scores (0-100)
+  safetyScore   Float    @default(100)
+  efficiencyScore Float  @default(100)
+  punctualityScore Float @default(100)
+  overallScore  Float    @default(100)
+  
+  // Rankings
+  rank          Int?
+  previousRank  Int?
+  
+  // Achievements
+  achievements  Json[]   @default([]) // Array of achievement objects
+  
+  // Current status
+  currentStatus EmployeeActivityStatus @default(OFFLINE)
+  lastSeen      DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([overallScore])
+}
+
+enum EmployeeActivityStatus {
+  ONLINE
+  OFFLINE
+  DRIVING
+  AT_JOB_SITE
+  ON_BREAK
+  IDLE
 }

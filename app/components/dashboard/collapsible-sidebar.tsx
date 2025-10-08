@@ -36,6 +36,7 @@ import {
   UserCheck,
   ChevronLeft,
   ChevronRight,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -44,6 +45,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useGlassEffects } from '@/hooks/use-glass-effects';
+import { getGlassEffectStyles } from '@/lib/glass-effects';
 
 interface CollapsibleSidebarProps {
   jobs: any[];
@@ -67,27 +70,14 @@ export function CollapsibleSidebar({
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [sidebarStyle, setSidebarStyle] = useState({
-    background: 'bg-card',
-    blur: false,
-    opacity: 100,
-  });
+  const { sidebarSettings } = useGlassEffects();
 
   // Load sidebar preferences from localStorage
   useEffect(() => {
     const savedCollapsed = localStorage.getItem('sidebarCollapsed');
-    const savedStyle = localStorage.getItem('sidebarStyle');
     
     if (savedCollapsed !== null) {
       setCollapsed(savedCollapsed === 'true');
-    }
-    
-    if (savedStyle) {
-      try {
-        setSidebarStyle(JSON.parse(savedStyle));
-      } catch (e) {
-        console.error('Failed to parse sidebar style:', e);
-      }
     }
   }, []);
 
@@ -148,6 +138,7 @@ export function CollapsibleSidebar({
         { icon: UserCheck, label: 'Clients', onClick: () => router.push('/clients') },
         { icon: Briefcase, label: 'Services', onClick: () => router.push('/services') },
         { icon: Users, label: 'Employees', onClick: () => router.push('/hr') },
+        { icon: Activity, label: 'Employee Tracking', onClick: () => router.push('/tracking') },
         { icon: DollarSign, label: 'Payroll', onClick: () => router.push('/payroll') },
         { icon: Truck, label: 'Fleet', onClick: () => router.push('/fleet') },
         { icon: Package, label: 'Equipment', onClick: () => router.push('/equipment') },
@@ -179,27 +170,22 @@ export function CollapsibleSidebar({
   // Get sidebar background styles based on preferences
   const getSidebarClasses = () => {
     const baseClasses = 'border-r border-border flex flex-col relative z-50 transition-all duration-300';
-    
-    if (sidebarStyle.blur) {
-      return cn(
-        baseClasses,
-        'backdrop-blur-xl bg-card/70',
-        collapsed ? 'w-16' : 'w-80'
-      );
-    }
+    const isGlassEnabled = sidebarSettings.enabled && sidebarSettings.type !== 'none';
     
     return cn(
       baseClasses,
-      sidebarStyle.background,
+      isGlassEnabled ? 'glass-morphism' : 'bg-card',
       collapsed ? 'w-16' : 'w-80'
     );
   };
+
+  const glassStyles = getGlassEffectStyles(sidebarSettings);
 
   // Collapsed View - Icon Only
   if (collapsed) {
     return (
       <TooltipProvider delayDuration={0}>
-        <aside className={getSidebarClasses()}>
+        <aside className={getSidebarClasses()} style={glassStyles}>
           <div className="p-2 flex justify-center border-b border-border">
             <Button
               variant="ghost"
@@ -247,7 +233,7 @@ export function CollapsibleSidebar({
 
   // Expanded View - Full Sidebar
   return (
-    <aside className={getSidebarClasses()}>
+    <aside className={getSidebarClasses()} style={glassStyles}>
       {/* Header with Toggle */}
       <div className="p-4 flex items-center justify-between border-b border-border">
         <h1 className="text-lg font-bold text-primary">AsphaltPro</h1>

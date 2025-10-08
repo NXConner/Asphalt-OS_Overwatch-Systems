@@ -29,6 +29,9 @@ import {
 } from 'lucide-react';
 import { GlitchWrapper } from '@/components/ui/glitch-wrapper';
 import { useRouter } from 'next/navigation';
+import { useGlassEffects } from '@/hooks/use-glass-effects';
+import { getGlassEffectStyles } from '@/lib/glass-effects';
+import { cn } from '@/lib/utils';
 
 interface DashboardHeaderProps {
   onTimesheetClick?: () => void;
@@ -48,15 +51,27 @@ export function DashboardHeader({
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const { topbarSettings } = useGlassEffects();
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: '/' });
   };
 
+  const glassStyles = getGlassEffectStyles(topbarSettings);
+  const isGlassEnabled = topbarSettings.enabled && topbarSettings.type !== 'none';
+
   return (
-    <header className="bg-card border-b border-border shadow-lg relative overflow-hidden">
-      {/* Animated gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 animate-pulse" />
+    <header 
+      className={cn(
+        "border-b border-border shadow-lg relative overflow-hidden transition-all duration-300",
+        isGlassEnabled ? "glass-morphism" : "bg-card"
+      )}
+      style={glassStyles}
+    >
+      {/* Animated gradient overlay - only show when not using glass */}
+      {!isGlassEnabled && (
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 animate-pulse" />
+      )}
       
       <div className="relative z-10 flex items-center justify-between px-4 py-3">
         {/* Left section */}
