@@ -89,7 +89,7 @@ export function DashboardHeader({ onTimesheetClick, onSidebarToggle, onDirection
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+    <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"

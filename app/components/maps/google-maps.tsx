@@ -353,7 +353,7 @@ export function GoogleMaps({
       
       {/* Measured area display */}
       {enableMeasuring && measuredArea > 0 && (
-        <div className="absolute top-96 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg animate-in fade-in slide-in-from-right">
+        <div className="absolute top-96 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg animate-in fade-in slide-in-from-right z-50">
           <div className="text-sm font-medium">Measured Area</div>
           <div className="text-lg font-bold text-primary">
             {measuredArea.toLocaleString()} sq ft
@@ -365,7 +365,7 @@ export function GoogleMaps({
       )}
 
       {/* Status legend */}
-      <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg">
+      <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg z-50">
         <div className="text-sm font-medium mb-2">Job Status</div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">

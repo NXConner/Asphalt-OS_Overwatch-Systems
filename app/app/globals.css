@@ -150,7 +150,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 1;
   overflow: hidden;
 }
 
@@ -167,7 +167,7 @@
     rgba(59, 130, 246, 0.6),
     transparent
   );
-  animation: scanline 3s linear infinite;
+  animation: scanline 12s linear infinite;
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
 }
 
@@ -175,10 +175,11 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 100%;
-  height: 100%;
+  width: 200%;
+  height: 200%;
   transform: translate(-50%, -50%);
   pointer-events: none;
+  z-index: 1;
 }
 
 .radar-sweep::before {
@@ -189,10 +190,39 @@
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 300px 300px 0 0;
-  border-color: rgba(59, 130, 246, 0.3) transparent transparent transparent;
-  transform-origin: left bottom;
-  animation: radarSweep 4s linear infinite;
+  border-width: 0 0 0 800px;
+  border-color: transparent transparent transparent transparent;
+  border-left-color: rgba(59, 130, 246, 0.15);
+  transform-origin: right center;
+  animation: radarSweep 15s linear infinite;
+  filter: blur(2px);
+  /* Create the cone fade effect with gradient */
+  background: linear-gradient(
+    to left,
+    transparent,
+    rgba(59, 130, 246, 0.2) 20%,
+    rgba(59, 130, 246, 0.05) 60%,
+    transparent 100%
+  );
+  clip-path: polygon(100% 50%, 0% 0%, 0% 100%);
+}
+
+.radar-sweep::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 800px;
+  height: 2px;
+  background: linear-gradient(
+    to left,
+    rgba(59, 130, 246, 0.8),
+    rgba(59, 130, 246, 0.3) 50%,
+    transparent
+  );
+  transform-origin: right center;
+  animation: radarSweep 15s linear infinite;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
 }
 
 .glitch-effect {
@@ -540,6 +570,10 @@ a:active,
   }
   
   .radar-sweep::before {
-    border-width: 150px 150px 0 0;
+    border-width: 0 0 0 400px;
+  }
+  
+  .radar-sweep::after {
+    width: 400px;
   }
 }

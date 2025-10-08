@@ -97,7 +97,7 @@ export function DashboardSidebar({
       return [
         ...baseItems,
         { icon: Building2, label: 'Jobs', count: jobs?.length || 0, onClick: () => router.push('/dashboard') },
-        { icon: Calculator, label: 'Estimates', onClick: () => router.push('/dashboard') },
+        { icon: Calculator, label: 'Estimates', onClick: () => router.push('/estimates') },
         { icon: Users, label: 'Employees', onClick: () => router.push('/hr') },
         { icon: DollarSign, label: 'Payroll', onClick: () => router.push('/payroll') },
         { icon: FileText, label: 'Invoices', onClick: () => router.push('/financials') },
@@ -119,7 +119,7 @@ export function DashboardSidebar({
 
   if (collapsed) {
     return (
-      <aside className="w-16 bg-white border-r border-gray-200 p-2">
+      <aside className="w-16 bg-white border-r border-gray-200 p-2 relative z-50">
         <div className="space-y-2">
           {navigationItems.map((item, index) => (
             <Button
@@ -138,7 +138,7 @@ export function DashboardSidebar({
   }
 
   return (
-    <aside className="w-80 bg-white border-r border-gray-200 flex flex-col">
+    <aside className="w-80 bg-white border-r border-gray-200 flex flex-col relative z-50">
       {/* Navigation */}
       <div className="p-4">
         <div className="space-y-2">
