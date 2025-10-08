@@ -1,50 +1,58 @@
 
+
 'use client';
 
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from '@/components/theme-provider';
-import { ReactNode, useEffect, useState } from 'react';
+import { Toaster } from 'sonner';
+import { useEffect } from 'react';
 import { applyTheme, getThemeById } from '@/lib/theme-presets';
 
-interface ProvidersProps {
-  children: ReactNode;
-}
-
-export function Providers({ children }: ProvidersProps) {
-  const [mounted, setMounted] = useState(false);
-
-  // Avoid hydration mismatch
+export function Providers({ children }: { children: React.ReactNode }) {
+  // Apply saved theme on mount
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Apply Black Gold theme as default on mount
-  useEffect(() => {
-    if (mounted) {
-      // Check if user has a saved theme preference
-      const savedTheme = localStorage.getItem('selected-theme');
-      
-      if (!savedTheme) {
-        // Apply Black Gold theme as default
-        const blackGoldTheme = getThemeById('black-gold');
-        if (blackGoldTheme) {
-          applyTheme(blackGoldTheme.colors);
-          localStorage.setItem('selected-theme', 'black-gold');
-        }
-      } else {
-        // Apply saved theme
-        const theme = getThemeById(savedTheme);
-        if (theme) {
-          applyTheme(theme.colors);
+    const savedTheme = localStorage.getItem('appTheme');
+    
+    if (savedTheme && savedTheme !== 'custom') {
+      const theme = getThemeById(savedTheme);
+      if (theme) {
+        applyTheme(theme.colors);
+      }
+    } else if (savedTheme === 'custom') {
+      const savedColors = localStorage.getItem('customThemeColors');
+      if (savedColors) {
+        try {
+          applyTheme(JSON.parse(savedColors));
+        } catch (e) {
+          console.error('Failed to parse custom theme colors:', e);
         }
       }
+    } else {
+      // Apply Black Gold theme by default if no theme is saved
+      const blackGoldTheme = getThemeById('black-gold');
+      if (blackGoldTheme) {
+        applyTheme(blackGoldTheme.colors);
+        localStorage.setItem('appTheme', 'black-gold');
+      }
     }
-  }, [mounted]);
+  }, []);
 
   return (
     <SessionProvider>
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-        {mounted ? children : <div className="min-h-screen bg-background">{children}</div>}
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="dark"
+        enableSystem={false}
+        disableTransitionOnChange={false}
+      >
+        {children}
+        <Toaster 
+          position="top-right" 
+          richColors 
+          closeButton 
+          expand={false}
+          theme="dark"
+        />
       </ThemeProvider>
     </SessionProvider>
   );
