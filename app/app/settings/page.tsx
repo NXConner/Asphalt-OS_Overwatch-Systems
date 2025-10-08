@@ -12,8 +12,9 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Save, ArrowLeft, DollarSign, Settings, Wrench, Percent } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, DollarSign, Settings, Wrench, Percent, Map } from 'lucide-react';
 
 interface BusinessSetting {
   id: string;
@@ -32,12 +33,21 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changes, setChanges] = useState<Record<string, string>>({});
+  const [mapType, setMapType] = useState<string>('hybrid');
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.replace('/');
     }
   }, [status, router]);
+
+  // Load saved map type from localStorage
+  useEffect(() => {
+    const savedMapType = localStorage.getItem('mapType');
+    if (savedMapType) {
+      setMapType(savedMapType);
+    }
+  }, []);
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
@@ -109,6 +119,14 @@ export default function SettingsPage() {
 
   const handleReset = () => {
     setChanges({});
+  };
+
+  const handleMapTypeChange = (value: string) => {
+    setMapType(value);
+    localStorage.setItem('mapType', value);
+    toast.success('Map type updated', {
+      description: 'Refresh the map to see changes',
+    });
   };
 
   const getCategoryIcon = (category: string) => {
@@ -252,6 +270,44 @@ export default function SettingsPage() {
             </TabsContent>
           ))}
         </Tabs>
+
+        <Separator className="my-8" />
+
+        {/* Map Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Map className="w-4 h-4" />
+              Map Display Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="mapType" className="text-sm font-medium">
+                  Map View Type
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    Display
+                  </Badge>
+                </Label>
+                <Select value={mapType} onValueChange={handleMapTypeChange}>
+                  <SelectTrigger id="mapType" className="w-full">
+                    <SelectValue placeholder="Select map type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="roadmap">Roadmap (Standard)</SelectItem>
+                    <SelectItem value="satellite">Satellite</SelectItem>
+                    <SelectItem value="hybrid">Hybrid (Satellite + Roads)</SelectItem>
+                    <SelectItem value="terrain">Terrain</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Choose how the map is displayed on the dashboard. Changes take effect immediately.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Separator className="my-8" />
         

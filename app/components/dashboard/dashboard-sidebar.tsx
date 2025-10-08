@@ -166,31 +166,33 @@ export function DashboardSidebar({
   }
 
   return (
-    <aside className="w-80 bg-white border-r border-gray-200 flex flex-col relative z-50">
+    <aside className="w-80 bg-white border-r border-gray-200 flex flex-col relative z-50 overflow-hidden">
       {/* Navigation */}
-      <div className="p-4">
-        <div className="space-y-2">
-          {navigationItems.map((item, index) => (
-            <Button
-              key={index}
-              variant={item.active ? "default" : "ghost"}
-              className={cn(
-                "w-full justify-start",
-                item.active && "bg-blue-600 hover:bg-blue-700"
-              )}
-              onClick={item.onClick}
-            >
-              <item.icon className="mr-2 h-4 w-4" />
-              {item.label}
-              {item.count !== undefined && (
-                <Badge variant="secondary" className="ml-auto">
-                  {item.count}
-                </Badge>
-              )}
-            </Button>
-          ))}
+      <ScrollArea className="flex-shrink-0 max-h-[40vh]">
+        <div className="p-4">
+          <div className="space-y-2">
+            {navigationItems.map((item, index) => (
+              <Button
+                key={index}
+                variant={item.active ? "default" : "ghost"}
+                className={cn(
+                  "w-full justify-start",
+                  item.active && "bg-blue-600 hover:bg-blue-700"
+                )}
+                onClick={item.onClick}
+              >
+                <item.icon className="mr-2 h-4 w-4" />
+                {item.label}
+                {item.count !== undefined && (
+                  <Badge variant="secondary" className="ml-auto">
+                    {item.count}
+                  </Badge>
+                )}
+              </Button>
+            ))}
+          </div>
         </div>
-      </div>
+      </ScrollArea>
 
       <Separator />
 

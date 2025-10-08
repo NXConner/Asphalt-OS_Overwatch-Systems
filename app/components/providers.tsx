@@ -19,7 +19,7 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <SessionProvider>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
         {mounted ? children : <div className="min-h-screen bg-background">{children}</div>}
       </ThemeProvider>
     </SessionProvider>

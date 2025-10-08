@@ -12,7 +12,7 @@ import { EstimateDialog } from '@/components/dashboard/estimate-dialog';
 import { TimesheetDialog } from '@/components/dashboard/timesheet-dialog';
 import { DirectionsPanel } from '@/components/directions/directions-panel';
 import { ScanLine } from '@/components/ui/scan-line';
-import { EnhancedWeatherWidget } from '@/components/weather/enhanced-weather-widget';
+import { DraggableWeatherWidget } from '@/components/weather/draggable-weather-widget';
 import { RainRadarOverlay } from '@/components/map/rain-radar-overlay';
 import { MapMarker } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
@@ -38,6 +38,7 @@ export default function DashboardPage() {
   const [radarRadius, setRadarRadius] = useState(5);
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
   const [mapCenter, setMapCenter] = useState<google.maps.LatLng | null>(null);
+  const [weatherWidgetVisible, setWeatherWidgetVisible] = useState(true);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -166,6 +167,7 @@ export default function DashboardPage() {
         onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         onDirectionsClick={() => handleDirections()}
         onSettingsClick={handleSettings}
+        onWeatherClick={() => setWeatherWidgetVisible(!weatherWidgetVisible)}
       />
       
       <div className="flex flex-1 overflow-hidden">
@@ -200,14 +202,14 @@ export default function DashboardPage() {
             enabled={radarEnabled}
           />
           
-          {/* Enhanced Weather Widget - Floating overlay */}
-          <div className="absolute top-4 right-4 z-10 w-96 max-w-full">
-            <EnhancedWeatherWidget 
-              location="Richmond,VA,US"
-              showRadar={true}
-              onRadarToggle={handleRadarToggle}
-            />
-          </div>
+          {/* Draggable Weather Widget */}
+          <DraggableWeatherWidget 
+            location="Richmond,VA,US"
+            showRadar={true}
+            onRadarToggle={handleRadarToggle}
+            isVisible={weatherWidgetVisible}
+            onClose={() => setWeatherWidgetVisible(false)}
+          />
         </main>
       </div>
 

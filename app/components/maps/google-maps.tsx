@@ -181,16 +181,15 @@ export function GoogleMaps({
 
         console.log('Initializing map with ref and Google Maps API ready');
 
+        // Get saved map type preference from localStorage
+        const savedMapType = localStorage.getItem('mapType') || 'hybrid';
+
         // Initialize map with user location or Patrick County default
         const mapInstance = new google.maps.Map(mapRef.current, {
           center: mapCenter,
           zoom: mapZoom,
-          mapTypeId: 'hybrid', // Hybrid satellite/road view
-          mapTypeControl: true,
-          mapTypeControlOptions: {
-            style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-            position: google.maps.ControlPosition.TOP_CENTER,
-          },
+          mapTypeId: savedMapType as google.maps.MapTypeId, // Use saved preference
+          mapTypeControl: false, // Remove map type controls from map
           zoomControl: true,
           streetViewControl: true,
           fullscreenControl: true,
