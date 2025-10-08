@@ -3,7 +3,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { GoogleMaps } from '@/components/maps/google-maps';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { CollapsibleSidebar } from '@/components/dashboard/collapsible-sidebar';
@@ -115,6 +115,25 @@ export default function DashboardPage() {
     router.push('/settings');
   };
 
+  // Wrap callbacks in useCallback to prevent infinite loops
+  const handleMapLoad = useCallback((map: google.maps.Map, center: google.maps.LatLng) => {
+    setMapInstance(map);
+    setMapCenter(center);
+  }, []); // Empty deps - only set once
+
+  const handleRadarToggle = useCallback((enabled: boolean, radius: number) => {
+    setRadarEnabled(enabled);
+    setRadarRadius(radius);
+  }, []); // Empty deps - can update state directly
+
+  const handleAreaMeasured = useCallback((area: number) => {
+    console.log('Area measured:', area, 'sq ft');
+    // Auto-update selected job with measured area
+    if (selectedJob) {
+      setSelectedJob({...selectedJob, squareFootage: area});
+    }
+  }, [selectedJob]); // Depends on selectedJob
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -169,17 +188,8 @@ export default function DashboardPage() {
             enableMeasuring={true}
             enableAISurfaceDetection={true}
             jobId={selectedJob?.id}
-            onAreaMeasured={(area) => {
-              console.log('Area measured:', area, 'sq ft');
-              // Auto-update selected job with measured area
-              if (selectedJob) {
-                setSelectedJob({...selectedJob, squareFootage: area});
-              }
-            }}
-            onMapLoad={(map, center) => {
-              setMapInstance(map);
-              setMapCenter(center);
-            }}
+            onAreaMeasured={handleAreaMeasured}
+            onMapLoad={handleMapLoad}
           />
           
           {/* Rain Radar Overlay */}
@@ -195,10 +205,7 @@ export default function DashboardPage() {
             <EnhancedWeatherWidget 
               location="Richmond,VA,US"
               showRadar={true}
-              onRadarToggle={(enabled, radius) => {
-                setRadarEnabled(enabled);
-                setRadarRadius(radius);
-              }}
+              onRadarToggle={handleRadarToggle}
             />
           </div>
         </main>

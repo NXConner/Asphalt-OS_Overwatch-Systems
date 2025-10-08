@@ -43,6 +43,24 @@ export function GoogleMaps({
 
   // Drawing manager for measuring areas
   const [drawingManager, setDrawingManager] = useState<google.maps.drawing.DrawingManager | null>(null);
+  
+  // Use refs to store callbacks to prevent re-initialization
+  const onMapClickRef = useRef(onMapClick);
+  const onAreaMeasuredRef = useRef(onAreaMeasured);
+  const onMapLoadRef = useRef(onMapLoad);
+  
+  // Update refs when callbacks change
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
+  
+  useEffect(() => {
+    onAreaMeasuredRef.current = onAreaMeasured;
+  }, [onAreaMeasured]);
+  
+  useEffect(() => {
+    onMapLoadRef.current = onMapLoad;
+  }, [onMapLoad]);
 
   // Initialize Google Maps
   useEffect(() => {
@@ -134,9 +152,9 @@ export function GoogleMaps({
 
         setMap(mapInstance);
 
-        // Notify parent component of map load
+        // Notify parent component of map load (only once)
         const mapCenter = new google.maps.LatLng(center.lat, center.lng);
-        onMapLoad?.(mapInstance, mapCenter);
+        onMapLoadRef.current?.(mapInstance, mapCenter);
 
         // Initialize drawing manager for measuring
         if (enableMeasuring) {
@@ -201,7 +219,7 @@ export function GoogleMaps({
             // Convert to square feet
             const areaInSqFt = area * 10.764;
             setMeasuredArea(areaInSqFt);
-            onAreaMeasured?.(areaInSqFt);
+            onAreaMeasuredRef.current?.(areaInSqFt);
 
             // Clear drawing mode
             drawingManagerInstance.setDrawingMode(null);
@@ -216,7 +234,7 @@ export function GoogleMaps({
 
         // Add click listener for adding jobs
         mapInstance.addListener('click', async (event: any) => {
-          if (event.latLng && onMapClick && !isDrawing) {
+          if (event.latLng && onMapClickRef.current && !isDrawing) {
             const lat = event.latLng.lat();
             const lng = event.latLng.lng();
             
@@ -225,9 +243,9 @@ export function GoogleMaps({
               const geocoder = new google.maps.Geocoder();
               const response = await geocoder.geocode({ location: { lat, lng } });
               const address = response.results[0]?.formatted_address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-              onMapClick(lat, lng, address);
+              onMapClickRef.current(lat, lng, address);
             } catch (error) {
-              onMapClick(lat, lng);
+              onMapClickRef.current(lat, lng);
             }
           }
         });
@@ -240,8 +258,24 @@ export function GoogleMaps({
       }
     };
 
-    initMap();
-  }, [center, zoom, enableMeasuring, onMapClick, onAreaMeasured, isDrawing]);
+    // Only initialize map once on mount
+    if (!map) {
+      initMap();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // Update map center and zoom when props change
+  useEffect(() => {
+    if (map && center) {
+      map.setCenter(center);
+    }
+  }, [map, center]);
+  
+  useEffect(() => {
+    if (map && zoom) {
+      map.setZoom(zoom);
+    }
+  }, [map, zoom]);
 
   // Update markers when they change
   useEffect(() => {
@@ -341,7 +375,7 @@ export function GoogleMaps({
           onMeasurementSaved={(measurement) => {
             if (measurement.area) {
               setMeasuredArea(measurement.area);
-              onAreaMeasured?.(measurement.area);
+              onAreaMeasuredRef.current?.(measurement.area);
             }
           }}
         />
