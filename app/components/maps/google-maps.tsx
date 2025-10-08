@@ -246,18 +246,11 @@ export function GoogleMaps({
         const centerLatLng = new google.maps.LatLng(mapCenter.lat, mapCenter.lng);
         onMapLoadRef.current?.(mapInstance, centerLatLng);
 
-        // Initialize drawing manager for measuring
+        // Initialize drawing manager for measuring (hide default controls)
         if (enableMeasuring) {
           const drawingManagerInstance = new google.maps.drawing.DrawingManager({
             drawingMode: null,
-            drawingControl: true,
-            drawingControlOptions: {
-              position: google.maps.ControlPosition.TOP_CENTER,
-              drawingModes: [
-                google.maps.drawing.OverlayType.POLYGON,
-                google.maps.drawing.OverlayType.RECTANGLE,
-              ],
-            },
+            drawingControl: false, // Hide default controls
             polygonOptions: {
               fillColor: '#FFD700', // Gold
               fillOpacity: 0.3,
@@ -512,21 +505,20 @@ export function GoogleMaps({
         </div>
       </div>
 
-      {/* GPS Locate Me Button */}
+      {/* GPS Locate Me Button - Icon Only */}
       {map && (
         <Button
           onClick={locateMe}
           disabled={locatingUser}
-          size="sm"
-          className="absolute top-20 right-4 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg z-50 gap-2"
+          size="icon"
+          className="absolute top-4 right-52 bg-yellow-500 hover:bg-yellow-600 text-black shadow-lg z-50"
           title="Locate Me"
         >
           {locatingUser ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
           ) : (
-            <Crosshair className="h-4 w-4" />
+            <Crosshair className="h-5 w-5" />
           )}
-          <span className="text-xs font-medium">Locate Me</span>
         </Button>
       )}
     </div>

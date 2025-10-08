@@ -264,7 +264,7 @@ export function AuthForm() {
                     onClick={handleSignUp}
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Create Account
+                    Sign Up
                   </Button>
                 </form>
               </TabsContent>

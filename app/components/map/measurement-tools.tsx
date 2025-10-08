@@ -50,6 +50,7 @@ interface MeasurementToolsProps {
   map: google.maps.Map | null;
   onMeasurementSaved?: (measurement: Measurement) => void;
   jobId?: string;
+  drawingManager?: google.maps.drawing.DrawingManager | null;
 }
 
 const COLORS = [
@@ -62,7 +63,7 @@ const COLORS = [
   '#14b8a6', // teal
 ];
 
-export function MeasurementTools({ map, onMeasurementSaved, jobId }: MeasurementToolsProps) {
+export function MeasurementTools({ map, onMeasurementSaved, jobId, drawingManager }: MeasurementToolsProps) {
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [currentVertices, setCurrentVertices] = useState<Array<{ lat: number; lng: number }>>([]);
@@ -398,142 +399,148 @@ export function MeasurementTools({ map, onMeasurementSaved, jobId }: Measurement
   };
 
   return (
-    <div className="absolute top-4 right-4 z-10 space-y-2">
-      {/* Drawing Tools */}
-      <Card className="p-3 glass-effect">
-        <div className="space-y-2">
-          <div className="text-sm font-medium">Measurement Tools</div>
+    <>
+      {/* Measurement Tools Card - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <Card className="p-3 glass-effect">
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Measurement Tools</div>
 
-          <div className="flex gap-1">
-            <Button
-              size="sm"
-              variant={activeTool === 'polygon' ? 'default' : 'outline'}
-              onClick={() => {
-                if (isDrawing) {
-                  toast.error('Finish or cancel current drawing first');
-                  return;
-                }
-                setActiveTool('polygon');
-                toast('Click on map to add vertices. Click Finish when done.');
-              }}
-              className="flex-1"
-            >
-              <PenTool className="h-4 w-4" />
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={startAIDetection}
-              disabled={isDetecting}
-              className="flex-1"
-            >
-              {isDetecting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-
-          {isDrawing && (
-            <div className="space-y-2 pt-2 border-t">
-              <Input
-                placeholder="Measurement name"
-                value={measurementName}
-                onChange={(e) => setMeasurementName(e.target.value)}
-                size={30}
-              />
-
-              <div className="flex gap-1">
-                {COLORS.map(color => (
-                  <button
-                    key={color}
-                    className={`w-6 h-6 rounded border-2 ${
-                      selectedColor === color ? 'border-black' : 'border-gray-300'
-                    }`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => setSelectedColor(color)}
-                  />
-                ))}
-              </div>
-
-              <div className="text-xs text-muted-foreground">
-                {currentVertices.length} vertices
-              </div>
-
-              <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="default"
-                  onClick={finishDrawing}
-                  className="flex-1"
-                  disabled={currentVertices.length < 3}
-                >
-                  <Check className="h-4 w-4 mr-1" />
-                  Finish
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={cancelDrawing}
-                  className="flex-1"
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* Saved Measurements */}
-      {measurements.length > 0 && (
-        <Card className="p-3 glass-effect max-h-64 overflow-auto">
-          <div className="text-sm font-medium mb-2">Saved Measurements</div>
-          <div className="space-y-1">
-            {measurements.map(m => (
-              <div
-                key={m.id}
-                className="flex items-center justify-between text-xs p-2 bg-white/50 rounded"
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant={activeTool === 'polygon' ? 'default' : 'outline'}
+                onClick={() => {
+                  if (isDrawing) {
+                    toast.error('Finish or cancel current drawing first');
+                    return;
+                  }
+                  setActiveTool('polygon');
+                  toast('Click on map to add vertices. Click Finish when done.');
+                }}
+                className="flex-1"
+                title="Draw a Shape"
               >
-                <div className="flex-1">
-                  <div className="font-medium">{m.name}</div>
-                  <div className="text-muted-foreground">
-                    {m.area ? `${m.area.toLocaleString()} sq ft` : 'N/A'}
-                  </div>
-                  {m.isAIGenerated && (
-                    <Badge variant="outline" className="text-xs">
-                      🤖 AI {(m.aiConfidence! * 100).toFixed(0)}%
-                    </Badge>
-                  )}
+                <PenTool className="h-4 w-4" />
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={startAIDetection}
+                disabled={isDetecting}
+                className="flex-1"
+                title="AI Surface Detection"
+              >
+                {isDetecting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            {isDrawing && (
+              <div className="space-y-2 pt-2 border-t">
+                <Input
+                  placeholder="Measurement name"
+                  value={measurementName}
+                  onChange={(e) => setMeasurementName(e.target.value)}
+                  size={30}
+                />
+
+                <div className="flex gap-1">
+                  {COLORS.map(color => (
+                    <button
+                      key={color}
+                      className={`w-6 h-6 rounded border-2 ${
+                        selectedColor === color ? 'border-black' : 'border-gray-300'
+                      }`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setSelectedColor(color)}
+                    />
+                  ))}
                 </div>
+
+                <div className="text-xs text-muted-foreground">
+                  {currentVertices.length} vertices
+                </div>
+
                 <div className="flex gap-1">
                   <Button
                     size="sm"
-                    variant="ghost"
-                    onClick={() => toggleVisibility(m.id)}
+                    variant="default"
+                    onClick={finishDrawing}
+                    className="flex-1"
+                    disabled={currentVertices.length < 3}
                   >
-                    {m.isVisible ? (
-                      <Eye className="h-3 w-3" />
-                    ) : (
-                      <EyeOff className="h-3 w-3" />
-                    )}
+                    <Check className="h-4 w-4 mr-1" />
+                    Finish
                   </Button>
                   <Button
                     size="sm"
-                    variant="ghost"
-                    onClick={() => deleteMeasurement(m.id)}
+                    variant="outline"
+                    onClick={cancelDrawing}
+                    className="flex-1"
                   >
-                    <Trash2 className="h-3 w-3 text-red-500" />
+                    <X className="h-4 w-4 mr-1" />
+                    Cancel
                   </Button>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </Card>
+      </div>
+
+      {/* Saved Measurements - Top Right Below Measurement Tools */}
+      {measurements.length > 0 && (
+        <div className="absolute top-48 right-4 z-10">
+          <Card className="p-3 glass-effect max-h-64 overflow-auto">
+            <div className="text-sm font-medium mb-2">Saved Measurements</div>
+            <div className="space-y-1">
+              {measurements.map(m => (
+                <div
+                  key={m.id}
+                  className="flex items-center justify-between text-xs p-2 bg-white/50 rounded"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium">{m.name}</div>
+                    <div className="text-muted-foreground">
+                      {m.area ? `${m.area.toLocaleString()} sq ft` : 'N/A'}
+                    </div>
+                    {m.isAIGenerated && (
+                      <Badge variant="outline" className="text-xs">
+                        🤖 AI {(m.aiConfidence! * 100).toFixed(0)}%
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => toggleVisibility(m.id)}
+                    >
+                      {m.isVisible ? (
+                        <Eye className="h-3 w-3" />
+                      ) : (
+                        <EyeOff className="h-3 w-3" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => deleteMeasurement(m.id)}
+                    >
+                      <Trash2 className="h-3 w-3 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
       )}
-    </div>
+    </>
   );
 }
