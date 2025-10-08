@@ -25,7 +25,19 @@ import {
   TimerOff,
   Navigation,
   Route,
+  Cloud,
+  CloudRain,
+  Sun,
+  AlertTriangle,
+  Droplets,
 } from 'lucide-react';
+
+interface WeatherData {
+  temp: number;
+  condition: string;
+  icon: string;
+  workRecommendation: 'PROCEED' | 'CAUTION' | 'DELAY';
+}
 
 interface DashboardHeaderProps {
   onTimesheetClick: () => void;
@@ -39,6 +51,7 @@ export function DashboardHeader({ onTimesheetClick, onSidebarToggle, onDirection
   const [clockStatus, setClockStatus] = useState<{ isClockedIn: boolean; timesheet?: any }>({
     isClockedIn: false
   });
+  const [weather, setWeather] = useState<WeatherData | null>(null);
 
   // Check clock-in status
   useEffect(() => {
@@ -61,6 +74,57 @@ export function DashboardHeader({ onTimesheetClick, onSidebarToggle, onDirection
       return () => clearInterval(interval);
     }
   }, [session]);
+
+  // Fetch weather data
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        // Default to Patrick County, VA if geolocation not available
+        const defaultLat = 36.6865;
+        const defaultLon = -80.2731;
+
+        const response = await fetch(
+          `/api/weather?lat=${defaultLat}&lon=${defaultLon}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          setWeather(data);
+        }
+      } catch (error) {
+        console.error('Error fetching weather:', error);
+      }
+    };
+
+    fetchWeather();
+    // Update every 10 minutes
+    const interval = setInterval(fetchWeather, 600000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getWeatherIcon = () => {
+    if (!weather) return <Cloud className="h-4 w-4" />;
+    
+    const condition = weather.condition.toLowerCase();
+    if (condition.includes('rain')) return <CloudRain className="h-4 w-4 text-blue-600" />;
+    if (condition.includes('cloud')) return <Cloud className="h-4 w-4 text-gray-600" />;
+    return <Sun className="h-4 w-4 text-yellow-600" />;
+  };
+
+  const getWorkRecommendationBadge = () => {
+    if (!weather) return null;
+    
+    switch (weather.workRecommendation) {
+      case 'PROCEED':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800">Safe to Work</Badge>;
+      case 'CAUTION':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Work with Caution</Badge>;
+      case 'DELAY':
+        return <Badge variant="secondary" className="bg-red-100 text-red-800">Consider Delay</Badge>;
+      default:
+        return null;
+    }
+  };
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/' });
@@ -102,8 +166,20 @@ export function DashboardHeader({ onTimesheetClick, onSidebarToggle, onDirection
         
         <div className="flex items-center gap-2">
           <MapPin className="h-6 w-6 text-blue-600" />
-          <h1 className="text-xl font-bold text-gray-900">AsphaltPro Maps</h1>
+          <h1 className="text-xl font-bold text-gray-900">Asphalt OS</h1>
         </div>
+        
+        {/* Weather Display */}
+        {weather && (
+          <div className="hidden lg:flex items-center gap-3 px-3 py-1 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center gap-1">
+              {getWeatherIcon()}
+              <span className="text-sm font-medium">{Math.round(weather.temp)}°F</span>
+            </div>
+            <div className="h-4 w-px bg-gray-300" />
+            {getWorkRecommendationBadge()}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-4">

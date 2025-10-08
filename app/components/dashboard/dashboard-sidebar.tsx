@@ -35,6 +35,10 @@ import {
   BookOpen,
   Box,
   UserCheck,
+  Trophy,
+  Award,
+  Camera,
+  Plane,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -111,6 +115,8 @@ export function DashboardSidebar({
         { icon: Briefcase, label: 'Services', onClick: () => router.push('/services') },
         { icon: Users, label: 'Employees', onClick: () => router.push('/hr') },
         { icon: DollarSign, label: 'Payroll', onClick: () => router.push('/payroll') },
+        { icon: Trophy, label: 'Leaderboard', onClick: () => router.push('/leaderboard') },
+        { icon: Award, label: 'Achievements', onClick: () => router.push('/achievements') },
         { icon: Truck, label: 'Fleet', onClick: () => router.push('/fleet') },
         { icon: Package, label: 'Equipment', onClick: () => router.push('/equipment') },
         { icon: Box, label: 'Materials', onClick: () => router.push('/materials') },
@@ -129,6 +135,7 @@ export function DashboardSidebar({
       ...baseItems,
       { icon: Building2, label: 'My Jobs', count: filteredJobs?.length || 0, onClick: () => router.push('/dashboard') },
       { icon: Clock, label: 'Timesheet', onClick: () => router.push('/dashboard') },
+      { icon: Award, label: 'Achievements', onClick: () => router.push('/achievements') },
       { icon: Calendar, label: 'Schedule', onClick: () => router.push('/schedule') },
       { icon: Briefcase, label: 'Services', onClick: () => router.push('/services') },
       { icon: UserCircle, label: 'Profile', onClick: () => router.push('/profile') },

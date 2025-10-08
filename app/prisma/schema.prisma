@@ -1596,3 +1596,337 @@ enum CommunicationPriority {
   HIGH
   URGENT
 }
+
+// ==================== ACHIEVEMENTS & LEADERBOARDS ====================
+
+// Employee Achievements
+model Achievement {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  description   String
+  category      AchievementCategory
+  
+  // Points and rewards
+  points        Int      @default(0)
+  badgeIcon     String?  // Icon identifier
+  badgeColor    String   @default("#FFD700") // Gold default
+  
+  // Requirements (stored as JSON)
+  requirements  Json     // {type: "jobs_completed", count: 10} etc
+  
+  // Display
+  isActive      Boolean  @default(true)
+  rarity        AchievementRarity @default(COMMON)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  employeeAchievements EmployeeAchievement[]
+}
+
+enum AchievementCategory {
+  PRODUCTIVITY
+  SAFETY
+  QUALITY
+  TRAINING
+  ATTENDANCE
+  TEAMWORK
+  LEADERSHIP
+  MILESTONE
+}
+
+enum AchievementRarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+// Employee-Achievement relationship
+model EmployeeAchievement {
+  id              String   @id @default(cuid())
+  userId          String
+  achievementId   String
+  
+  // Earned details
+  earnedDate      DateTime @default(now())
+  progress        Int      @default(100) // Percentage
+  
+  // Display
+  isDisplayed     Boolean  @default(true)
+  
+  // Metadata
+  metadata        Json?    // Additional data about how it was earned
+  
+  createdAt DateTime @default(now())
+  
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+  
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([earnedDate])
+}
+
+// Leaderboard System
+model LeaderboardEntry {
+  id            String   @id @default(cuid())
+  userId        String
+  period        LeaderboardPeriod
+  
+  // Period dates
+  periodStart   DateTime
+  periodEnd     DateTime
+  
+  // Metrics
+  jobsCompleted Int      @default(0)
+  hoursWorked   Float    @default(0)
+  revenueGenerated Float @default(0)
+  safetyScore   Float    @default(100)
+  qualityScore  Float    @default(0)
+  
+  // Points
+  totalPoints   Int      @default(0)
+  rank          Int?
+  
+  // Achievements earned this period
+  achievementsEarned Int @default(0)
+  
+  // Status
+  isActive      Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, period, periodStart])
+  @@index([period, periodStart])
+  @@index([totalPoints])
+  @@index([rank])
+}
+
+enum LeaderboardPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  ALL_TIME
+}
+
+// ==================== JOB SITE PHOTOS ====================
+
+// Job Site Photos with GPS and enhancement data
+model JobPhoto {
+  id            String   @id @default(cuid())
+  jobId         String
+  
+  // File storage
+  cloudStoragePath String
+  fileName         String
+  fileSize         Int
+  mimeType         String
+  
+  // Photo metadata
+  capturedAt    DateTime @default(now())
+  capturedBy    String
+  
+  // GPS data
+  latitude      Float?
+  longitude     Float?
+  altitude      Float?
+  accuracy      Float?
+  
+  // Photo type
+  photoType     PhotoType @default(PROGRESS)
+  
+  // Enhancement data (stored as JSON)
+  enhancementSettings Json? // {brightness, contrast, saturation, etc}
+  isEnhanced    Boolean  @default(false)
+  
+  // Original photo reference (if enhanced)
+  originalPhotoId String?
+  
+  // Annotations
+  annotations   Json?    // Array of {type, coordinates, text, color}
+  
+  // Measurements (if photo used for measuring)
+  measurements  Json?    // {area, length, width, etc}
+  
+  // Description and notes
+  title         String?
+  description   String?
+  notes         String?
+  tags          String[] // Array of tags
+  
+  // Comparison sets (before/after)
+  comparisonSetId String?
+  sequenceOrder Int?     // Order in sequence
+  
+  // Visibility
+  isPublic      Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([jobId])
+  @@index([capturedBy])
+  @@index([photoType])
+  @@index([comparisonSetId])
+}
+
+enum PhotoType {
+  BEFORE
+  DURING
+  AFTER
+  PROGRESS
+  ISSUE
+  COMPLETION
+  AERIAL
+  DRONE
+  MEASUREMENT
+  DOCUMENTATION
+}
+
+// Photo Comparison Sets (Before/After)
+model PhotoComparisonSet {
+  id            String   @id @default(cuid())
+  jobId         String
+  name          String
+  description   String?
+  
+  // Photos are linked via comparisonSetId in JobPhoto
+  
+  createdBy     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([jobId])
+}
+
+// ==================== DRONE OPERATIONS ====================
+
+// Drone Flight Records
+model DroneFlight {
+  id            String   @id @default(cuid())
+  jobId         String?
+  
+  // Flight identification
+  flightNumber  String   @unique
+  pilotId       String
+  
+  // Flight details
+  droneModel    String
+  registrationNumber String?
+  
+  // Location
+  launchLat     Float
+  launchLon     Float
+  launchAlt     Float?
+  
+  // Timing
+  plannedStartTime DateTime
+  actualStartTime  DateTime?
+  actualEndTime    DateTime?
+  duration      Int?     // minutes
+  
+  // Flight plan (stored as JSON)
+  flightPath    Json     // Array of waypoints {lat, lon, alt, action}
+  coverageArea  Json?    // Polygon of coverage area
+  
+  // Weather at flight time
+  weatherConditions Json?
+  windSpeed     Float?
+  temperature   Float?
+  
+  // Captured media
+  photosCount   Int      @default(0)
+  videosCount   Int      @default(0)
+  
+  // Flight status
+  status        DroneFlightStatus @default(PLANNED)
+  
+  // Safety and compliance
+  airspaceAuthorization Boolean @default(false)
+  safetyCheckCompleted  Boolean @default(false)
+  incidentReported      Boolean @default(false)
+  incidentDetails       String?
+  
+  // Battery and technical
+  batteryStart  Int?     // Percentage
+  batteryEnd    Int?
+  
+  // Notes
+  purpose       String?
+  notes         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([jobId])
+  @@index([pilotId])
+  @@index([status])
+  @@index([plannedStartTime])
+}
+
+enum DroneFlightStatus {
+  PLANNED
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  INCIDENT
+}
+
+// Drone Equipment Registry
+model DroneEquipment {
+  id            String   @id @default(cuid())
+  name          String
+  make          String
+  model         String
+  serialNumber  String   @unique
+  
+  // Registration
+  faaRegistration String?
+  registrationExpiry DateTime?
+  
+  // Specifications
+  maxFlightTime Int?     // minutes
+  maxRange      Float?   // miles
+  cameraSpecs   Json?    // Camera specifications
+  
+  // Maintenance
+  lastMaintenance DateTime?
+  nextMaintenance DateTime?
+  flightHours   Int      @default(0)
+  totalFlights  Int      @default(0)
+  
+  // Status
+  status        DroneStatus @default(ACTIVE)
+  
+  // Insurance
+  insuranceProvider String?
+  insuranceExpiry   DateTime?
+  
+  // Assigned to
+  assignedPilotId String?
+  
+  // Purchase info
+  purchaseDate  DateTime?
+  purchasePrice Float?
+  
+  notes         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([status])
+  @@index([assignedPilotId])
+}
+
+enum DroneStatus {
+  ACTIVE
+  MAINTENANCE
+  OUT_OF_SERVICE
+  RETIRED
+  LOST
+}

@@ -115,8 +115,8 @@ export function AuthForm() {
           <div className="flex items-center justify-center mb-4">
             <MapPin className="h-12 w-12 text-blue-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">AsphaltPro Maps</h1>
-          <p className="text-gray-600 mt-2">Asphalt Paving Business Management</p>
+          <h1 className="text-3xl font-bold text-gray-900">Asphalt OS</h1>
+          <p className="text-gray-600 mt-2">Overwatch Systems - Advanced Business Management</p>
         </div>
 
         <Card>
