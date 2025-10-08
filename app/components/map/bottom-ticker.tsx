@@ -56,23 +56,9 @@ export function BottomTicker({
   enabled = true,
   onToggle 
 }: BottomTickerProps) {
-  const [items, setItems] = useState<TickerItem[]>(DEMO_TICKER_ITEMS);
+  const [items] = useState<TickerItem[]>(DEMO_TICKER_ITEMS);
   const [isVisible, setIsVisible] = useState(enabled);
   const [isPaused, setIsPaused] = useState(false);
-
-  // Auto-scroll ticker
-  useEffect(() => {
-    if (!isVisible || isPaused) return;
-
-    const interval = setInterval(() => {
-      setItems(prev => {
-        const [first, ...rest] = prev;
-        return [...rest, first];
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [isVisible, isPaused]);
 
   const toggleVisibility = () => {
     const newState = !isVisible;
@@ -107,9 +93,9 @@ export function BottomTicker({
         onMouseLeave={() => setIsPaused(false)}
       >
         <div className="flex-1 overflow-hidden">
-          <div className="flex items-center gap-4 animate-in slide-in-from-left duration-500">
-            {items.slice(0, 3).map(item => (
-              <div key={item.id} className="flex items-center gap-2 whitespace-nowrap">
+          <div className={cn("ticker-scroll flex items-center gap-8", isPaused && "paused")}>
+            {items.concat(items).map((item, index) => (
+              <div key={`${item.id}-${index}`} className="flex items-center gap-2 whitespace-nowrap">
                 <Badge 
                   variant={
                     item.type === 'job' ? 'default' :

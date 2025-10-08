@@ -71,10 +71,10 @@ export function DraggableWeatherWidget({
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [radarEnabled, setRadarEnabled] = useState(false);
+  const [radarEnabled, setRadarEnabled] = useState(true); // Rain radar on by default
   const [radarRadius, setRadarRadius] = useState(5); // miles
   const [rainAlert, setRainAlert] = useState<RainAlert | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(true); // Recommendations on by default
   
   // Dragging state
   const [position, setPosition] = useState({ x: 20, y: 80 });

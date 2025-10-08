@@ -219,43 +219,7 @@ export function FleetTrackerOverlay({
         </Card>
       )}
 
-      {/* Vehicle List */}
-      {isVisible && (
-        <Card className="absolute bottom-24 left-4 w-64 z-10 shadow-lg">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-3">
-              <Truck className="h-4 w-4" />
-              <h3 className="font-semibold text-sm">Active Fleet</h3>
-              <Badge variant="secondary" className="ml-auto">
-                {vehicles.length}
-              </Badge>
-            </div>
-            <div className="space-y-2">
-              {vehicles.map(vehicle => (
-                <button
-                  key={vehicle.id}
-                  onClick={() => {
-                    setSelectedVehicle(vehicle);
-                    map.panTo({ lat: vehicle.latitude, lng: vehicle.longitude });
-                  }}
-                  className="w-full text-left p-2 rounded-md hover:bg-muted transition-colors flex items-center gap-2"
-                >
-                  <div className={cn(
-                    "w-2 h-2 rounded-full flex-shrink-0",
-                    vehicle.status === 'ACTIVE' && "bg-blue-500 animate-pulse",
-                    vehicle.status === 'IDLE' && "bg-amber-500",
-                    vehicle.status === 'MAINTENANCE' && "bg-gray-400"
-                  )} />
-                  <span className="text-sm truncate">{vehicle.name}</span>
-                  {vehicle.fuelLevel && vehicle.fuelLevel < 30 && (
-                    <Fuel className="h-3 w-3 text-red-500 ml-auto" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
     </>
   );
 }

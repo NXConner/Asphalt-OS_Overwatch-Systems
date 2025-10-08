@@ -235,7 +235,7 @@ export function CollapsibleSidebar({
   return (
     <aside className={getSidebarClasses()} style={glassStyles}>
       {/* Header with Toggle */}
-      <div className="p-4 flex items-center justify-between border-b border-border">
+      <div className="p-4 flex items-center justify-between border-b border-border flex-shrink-0">
         <h1 className="text-lg font-bold text-primary">AsphaltPro</h1>
         <Button
           variant="ghost"
@@ -247,35 +247,37 @@ export function CollapsibleSidebar({
         </Button>
       </div>
 
-      {/* Navigation */}
-      <div className="p-4">
-        <div className="space-y-1">
-          {navigationItems.map((item, index) => (
-            <Button
-              key={index}
-              variant={item.active ? "default" : "ghost"}
-              className={cn(
-                "w-full justify-start",
-                item.active && "bg-primary hover:bg-primary/90"
-              )}
-              onClick={item.onClick}
-            >
-              <item.icon className="mr-2 h-4 w-4" />
-              {item.label}
-              {item.count !== undefined && (
-                <Badge variant="secondary" className="ml-auto">
-                  {item.count}
-                </Badge>
-              )}
-            </Button>
-          ))}
+      {/* Scrollable Content */}
+      <ScrollArea className="flex-1">
+        {/* Navigation */}
+        <div className="p-4">
+          <div className="space-y-1">
+            {navigationItems.map((item, index) => (
+              <Button
+                key={index}
+                variant={item.active ? "default" : "ghost"}
+                className={cn(
+                  "w-full justify-start",
+                  item.active && "bg-primary hover:bg-primary/90"
+                )}
+                onClick={item.onClick}
+              >
+                <item.icon className="mr-2 h-4 w-4" />
+                {item.label}
+                {item.count !== undefined && (
+                  <Badge variant="secondary" className="ml-auto">
+                    {item.count}
+                  </Badge>
+                )}
+              </Button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <Separator />
+        <Separator />
 
-      {/* Jobs Section */}
-      <div className="flex-1 flex flex-col p-4">
+        {/* Jobs Section */}
+        <div className="flex flex-col p-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Jobs</h2>
           <Button
@@ -316,38 +318,37 @@ export function CollapsibleSidebar({
         </div>
 
         {/* Jobs List */}
-        <ScrollArea className="flex-1">
-          <div className="space-y-3">
-            {filteredJobs?.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                <MapPin className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                <p className="text-sm">No jobs found</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={onNewJob}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add First Job
-                </Button>
-              </div>
-            ) : (
-              filteredJobs?.map((job) => (
-                <Card 
-                  key={job.id} 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => onJobSelect(job)}
-                >
-                  <CardContent className="p-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{getTypeIcon(job.type)}</span>
-                        <h3 className="font-medium text-sm truncate">
-                          {job.title}
-                        </h3>
-                      </div>
-                      <Badge className={`text-xs ${getStatusColor(job.status)}`}>
+        <div className="space-y-3">
+          {filteredJobs?.length === 0 ? (
+            <div className="text-center text-muted-foreground py-8">
+              <MapPin className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
+              <p className="text-sm">No jobs found</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={onNewJob}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add First Job
+              </Button>
+            </div>
+          ) : (
+            filteredJobs?.map((job) => (
+              <Card 
+                key={job.id} 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => onJobSelect(job)}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{getTypeIcon(job.type)}</span>
+                      <h3 className="font-medium text-sm truncate">
+                        {job.title}
+                      </h3>
+                    </div>
+                    <Badge className={`text-xs ${getStatusColor(job.status)}`}>
                         {job.status?.replace('_', ' ')}
                       </Badge>
                     </div>
@@ -413,14 +414,13 @@ export function CollapsibleSidebar({
                 </Card>
               ))
             )}
-          </div>
-        </ScrollArea>
+        </div>
 
         {/* Summary Stats */}
         {jobs?.length > 0 && (
           <>
             <Separator className="my-4" />
-            <div className="space-y-2">
+            <div className="space-y-2 px-4 pb-4">
               <h3 className="text-sm font-medium text-muted-foreground">Summary</h3>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded">
@@ -445,7 +445,8 @@ export function CollapsibleSidebar({
             </div>
           </>
         )}
-      </div>
+        </div>
+      </ScrollArea>
     </aside>
   );
 }

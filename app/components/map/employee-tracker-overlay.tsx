@@ -201,41 +201,7 @@ export function EmployeeTrackerOverlay({
         </Card>
       )}
 
-      {/* Employee List */}
-      {isVisible && (
-        <Card className="absolute bottom-24 right-4 w-64 z-10 shadow-lg">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="h-4 w-4" />
-              <h3 className="font-semibold text-sm">Active Employees</h3>
-              <Badge variant="secondary" className="ml-auto">
-                {employees.length}
-              </Badge>
-            </div>
-            <div className="space-y-2">
-              {employees.map(employee => (
-                <button
-                  key={employee.id}
-                  onClick={() => {
-                    setSelectedEmployee(employee);
-                    map.panTo({ lat: employee.latitude, lng: employee.longitude });
-                  }}
-                  className="w-full text-left p-2 rounded-md hover:bg-muted transition-colors flex items-center gap-2"
-                >
-                  <div className={cn(
-                    "w-2 h-2 rounded-full flex-shrink-0",
-                    employee.currentStatus === 'DRIVING' && "bg-green-500 animate-pulse",
-                    employee.currentStatus === 'AT_JOB_SITE' && "bg-blue-500",
-                    employee.currentStatus === 'ONLINE' && "bg-amber-500",
-                    employee.currentStatus === 'OFFLINE' && "bg-gray-400"
-                  )} />
-                  <span className="text-sm truncate">{employee.name}</span>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
     </>
   );
 }

@@ -38,11 +38,11 @@ export default function DashboardPage() {
     address?: string;
   } | undefined>(undefined);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [radarEnabled, setRadarEnabled] = useState(true); // Changed to true - always on by default
+  const [radarEnabled, setRadarEnabled] = useState(true); // Rain radar on by default
   const [radarRadius, setRadarRadius] = useState(5);
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
   const [mapCenter, setMapCenter] = useState<google.maps.LatLng | null>(null);
-  const [weatherWidgetVisible, setWeatherWidgetVisible] = useState(true); // Changed to true - always visible by default
+  const [weatherWidgetVisible, setWeatherWidgetVisible] = useState(false); // Widget closed by default
   const [employeeTrackingEnabled, setEmployeeTrackingEnabled] = useState(true); // Always on by default
   const [fleetTrackingEnabled, setFleetTrackingEnabled] = useState(true); // Always on by default
   const [tickerEnabled, setTickerEnabled] = useState(true); // Always on by default
