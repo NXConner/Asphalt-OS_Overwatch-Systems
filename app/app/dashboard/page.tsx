@@ -15,6 +15,9 @@ import { DirectionsPanel } from '@/components/directions/directions-panel';
 import { ScanLine } from '@/components/ui/scan-line';
 import { DraggableWeatherWidget } from '@/components/weather/draggable-weather-widget';
 import { RainRadarOverlay } from '@/components/map/rain-radar-overlay';
+import { EmployeeTrackerOverlay } from '@/components/map/employee-tracker-overlay';
+import { FleetTrackerOverlay } from '@/components/map/fleet-tracker-overlay';
+import { BottomTicker } from '@/components/map/bottom-ticker';
 import { MapMarker } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -35,11 +38,14 @@ export default function DashboardPage() {
     address?: string;
   } | undefined>(undefined);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [radarEnabled, setRadarEnabled] = useState(false);
+  const [radarEnabled, setRadarEnabled] = useState(true); // Changed to true - always on by default
   const [radarRadius, setRadarRadius] = useState(5);
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
   const [mapCenter, setMapCenter] = useState<google.maps.LatLng | null>(null);
-  const [weatherWidgetVisible, setWeatherWidgetVisible] = useState(false); // Changed to false by default
+  const [weatherWidgetVisible, setWeatherWidgetVisible] = useState(true); // Changed to true - always visible by default
+  const [employeeTrackingEnabled, setEmployeeTrackingEnabled] = useState(true); // Always on by default
+  const [fleetTrackingEnabled, setFleetTrackingEnabled] = useState(true); // Always on by default
+  const [tickerEnabled, setTickerEnabled] = useState(true); // Always on by default
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -203,13 +209,33 @@ export default function DashboardPage() {
             enabled={radarEnabled}
           />
           
-          {/* Draggable Weather Widget - Hidden by default */}
+          {/* Employee Tracking Overlay - Always on by default */}
+          <EmployeeTrackerOverlay
+            map={mapInstance}
+            enabled={employeeTrackingEnabled}
+            onToggle={setEmployeeTrackingEnabled}
+          />
+          
+          {/* Fleet Tracking Overlay - Always on by default */}
+          <FleetTrackerOverlay
+            map={mapInstance}
+            enabled={fleetTrackingEnabled}
+            onToggle={setFleetTrackingEnabled}
+          />
+          
+          {/* Draggable Weather Widget - Always visible by default */}
           <DraggableWeatherWidget 
             location="Richmond,VA,US"
             showRadar={true}
             onRadarToggle={handleRadarToggle}
             isVisible={weatherWidgetVisible}
             onClose={() => setWeatherWidgetVisible(false)}
+          />
+          
+          {/* Bottom Ticker - Always on by default */}
+          <BottomTicker
+            enabled={tickerEnabled}
+            onToggle={setTickerEnabled}
           />
         </main>
       </div>
