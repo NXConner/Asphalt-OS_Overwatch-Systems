@@ -20,8 +20,8 @@ interface GoogleMapsProps {
   jobId?: string;
 }
 
-// Patrick County, Virginia (default location - centered above the county)
-const PATRICK_COUNTY_CENTER = { lat: 36.7141, lng: -80.2937 }; // Centered above Patrick County
+// Default map center location
+const DEFAULT_CENTER = { lat: 36.7141, lng: -80.2937 };
 
 export function GoogleMaps({
   markers = [],
@@ -41,7 +41,7 @@ export function GoogleMaps({
   const [error, setError] = useState<string | null>(null);
   const [measuredArea, setMeasuredArea] = useState<number>(0);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(center || PATRICK_COUNTY_CENTER);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(center || DEFAULT_CENTER);
   const [mapZoom, setMapZoom] = useState<number>(zoom || 12);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -87,7 +87,7 @@ export function GoogleMaps({
             console.warn('Geolocation error:', error.message);
             setLocationError(error.message);
             // Fall back to Patrick County, Virginia
-            setMapCenter(PATRICK_COUNTY_CENTER);
+            setMapCenter(DEFAULT_CENTER);
             setMapZoom(12);
           },
           {
@@ -100,7 +100,7 @@ export function GoogleMaps({
         console.warn('Geolocation not supported by browser');
         setLocationError('Geolocation not supported');
         // Fall back to Patrick County, Virginia
-        setMapCenter(PATRICK_COUNTY_CENTER);
+        setMapCenter(DEFAULT_CENTER);
         setMapZoom(12);
       }
     } else {
@@ -495,10 +495,10 @@ export function GoogleMaps({
               <span>Using your location</span>
             </div>
           ) : locationError ? (
-            <div className="text-amber-600">
+            <div className="text-muted-foreground">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                <span>Patrick County, VA (Default)</span>
+                <div className="w-2 h-2 rounded-full bg-muted-foreground"></div>
+                <span>Default Location</span>
               </div>
             </div>
           ) : (
