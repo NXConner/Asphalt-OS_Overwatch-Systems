@@ -154,6 +154,10 @@ export default function ThemePage() {
               </p>
             </div>
             <div className="flex gap-2">
+              <Button onClick={() => router.push('/theme/advanced')} variant="default">
+                <Sparkles className="h-4 w-4 mr-2" />
+                Advanced Effects
+              </Button>
               <Button onClick={togglePreview} variant="outline">
                 <Eye className="h-4 w-4 mr-2" />
                 {previewMode ? 'Exit Preview' : 'Preview'}

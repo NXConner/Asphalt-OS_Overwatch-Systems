@@ -6,13 +6,14 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { GoogleMaps } from '@/components/maps/google-maps';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
-import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
+import { CollapsibleSidebar } from '@/components/dashboard/collapsible-sidebar';
 import { JobDialog } from '@/components/dashboard/job-dialog';
 import { EstimateDialog } from '@/components/dashboard/estimate-dialog';
 import { TimesheetDialog } from '@/components/dashboard/timesheet-dialog';
 import { DirectionsPanel } from '@/components/directions/directions-panel';
 import { ScanLine } from '@/components/ui/scan-line';
-import { WeatherWidget } from '@/components/weather/weather-widget';
+import { EnhancedWeatherWidget } from '@/components/weather/enhanced-weather-widget';
+import { RainRadarOverlay } from '@/components/map/rain-radar-overlay';
 import { MapMarker } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -33,6 +34,10 @@ export default function DashboardPage() {
     address?: string;
   } | undefined>(undefined);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [radarEnabled, setRadarEnabled] = useState(false);
+  const [radarRadius, setRadarRadius] = useState(5);
+  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
+  const [mapCenter, setMapCenter] = useState<google.maps.LatLng | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -145,9 +150,8 @@ export default function DashboardPage() {
       />
       
       <div className="flex flex-1 overflow-hidden">
-        <DashboardSidebar 
+        <CollapsibleSidebar 
           jobs={jobs}
-          collapsed={sidebarCollapsed}
           onJobSelect={(job) => {
             setSelectedJob(job);
             setShowJobDialog(true);
@@ -172,11 +176,30 @@ export default function DashboardPage() {
                 setSelectedJob({...selectedJob, squareFootage: area});
               }
             }}
+            onMapLoad={(map, center) => {
+              setMapInstance(map);
+              setMapCenter(center);
+            }}
           />
           
-          {/* Weather Widget - Floating overlay */}
-          <div className="absolute top-4 right-4 z-10 w-80 max-w-full">
-            <WeatherWidget location="Richmond,VA,US" />
+          {/* Rain Radar Overlay */}
+          <RainRadarOverlay
+            map={mapInstance}
+            center={mapCenter}
+            radius={radarRadius}
+            enabled={radarEnabled}
+          />
+          
+          {/* Enhanced Weather Widget - Floating overlay */}
+          <div className="absolute top-4 right-4 z-10 w-96 max-w-full">
+            <EnhancedWeatherWidget 
+              location="Richmond,VA,US"
+              showRadar={true}
+              onRadarToggle={(enabled, radius) => {
+                setRadarEnabled(enabled);
+                setRadarRadius(radius);
+              }}
+            />
           </div>
         </main>
       </div>

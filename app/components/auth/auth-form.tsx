@@ -166,7 +166,14 @@ export function AuthForm() {
                       disabled={loading}
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={loading}
+                    onClick={(e) => {
+                      // Form submission is handled by onSubmit
+                    }}
+                  >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign In
                   </Button>
@@ -248,7 +255,14 @@ export function AuthForm() {
                       minLength={6}
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={loading}
+                    onClick={(e) => {
+                      // Form submission is handled by onSubmit
+                    }}
+                  >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Create Account
                   </Button>

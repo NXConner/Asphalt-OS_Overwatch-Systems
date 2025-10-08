@@ -12,6 +12,7 @@ interface GoogleMapsProps {
   onMarkerClick?: (marker: MapMarker) => void;
   onMapClick?: (lat: number, lng: number, address?: string) => void;
   onAreaMeasured?: (area: number) => void;
+  onMapLoad?: (map: google.maps.Map, center: google.maps.LatLng) => void;
   center?: { lat: number; lng: number };
   zoom?: number;
   enableMeasuring?: boolean;
@@ -26,6 +27,7 @@ export function GoogleMaps({
   onMarkerClick,
   onMapClick,
   onAreaMeasured,
+  onMapLoad,
   center = BUSINESS_LOCATION,
   zoom = 12,
   enableMeasuring = false,
@@ -131,6 +133,10 @@ export function GoogleMaps({
         });
 
         setMap(mapInstance);
+
+        // Notify parent component of map load
+        const mapCenter = new google.maps.LatLng(center.lat, center.lng);
+        onMapLoad?.(mapInstance, mapCenter);
 
         // Initialize drawing manager for measuring
         if (enableMeasuring) {
