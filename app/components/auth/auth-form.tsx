@@ -170,6 +170,8 @@ export function AuthForm() {
                     type="submit" 
                     className="w-full" 
                     disabled={loading}
+                    data-testid="sign-in-button"
+                    id="sign-in-button"
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign In
@@ -256,9 +258,8 @@ export function AuthForm() {
                     type="submit" 
                     className="w-full" 
                     disabled={loading}
-                    onClick={(e) => {
-                      // Form submission is handled by onSubmit
-                    }}
+                    data-testid="sign-up-button"
+                    id="sign-up-button"
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Create Account
