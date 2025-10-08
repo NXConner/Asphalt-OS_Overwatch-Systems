@@ -63,7 +63,7 @@ export function DashboardHeader({
   return (
     <header 
       className={cn(
-        "border-b border-border shadow-lg relative overflow-hidden transition-all duration-300",
+        "border-b border-border shadow-lg relative overflow-hidden transition-all duration-300 z-50",
         isGlassEnabled ? "glass-morphism" : "bg-card"
       )}
       style={glassStyles}
