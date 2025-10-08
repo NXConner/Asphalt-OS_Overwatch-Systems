@@ -4,12 +4,13 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
+import { AdvancedDashboard } from '@/components/reports/advanced-dashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart3, Download, TrendingUp, MapPin, Users, DollarSign, Calendar, ArrowLeft, PieChart, LineChart, Activity, Target, Award, AlertCircle } from 'lucide-react';
+import { Loader2, Download, ArrowLeft, FileText, DollarSign, TrendingUp, MapPin, Target, PieChart, BarChart3, Users, Award, Activity, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subYears } from 'date-fns';
 
@@ -336,13 +337,19 @@ export default function ReportsPage() {
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="overview" className="space-y-4">
+          <Tabs defaultValue="dashboard" className="space-y-4">
             <TabsList>
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="jobs">Job Analytics</TabsTrigger>
               <TabsTrigger value="financial">Financial</TabsTrigger>
               <TabsTrigger value="labor">Labor</TabsTrigger>
             </TabsList>
+
+            {/* Advanced Dashboard Tab */}
+            <TabsContent value="dashboard" className="space-y-4">
+              <AdvancedDashboard data={{ jobs, timesheets, expenses, revenues }} />
+            </TabsContent>
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-4">

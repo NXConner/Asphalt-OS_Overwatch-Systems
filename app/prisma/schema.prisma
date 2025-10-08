@@ -64,6 +64,7 @@ model User {
   createdExpenses Expense[] @relation("CreatedExpenses")
   approvedExpenses Expense[] @relation("ApprovedExpenses")
   createdRevenues Revenue[] @relation("CreatedRevenues")
+  createdBids Bid[] @relation("BidCreator")
 }
 
 model VerificationToken {
@@ -878,6 +879,7 @@ model Client {
   jobs      Job[]      @relation("ClientJobs")
   documents ClientDocument[]
   contracts Contract[]
+  bids      Bid[]
 }
 
 // Update Job model to include client relationship
@@ -929,6 +931,7 @@ model Job {
   expenses  Expense[]
   revenues  Revenue[]
   measurements MapMeasurement[]
+  invoices  Invoice[]
 }
 
 // Documents & Contracts System
@@ -1595,6 +1598,125 @@ enum CommunicationPriority {
   NORMAL
   HIGH
   URGENT
+}
+
+// ==================== INVOICING SYSTEM ====================
+
+// Invoices
+model Invoice {
+  id              String   @id @default(cuid())
+  invoiceNumber   String   @unique
+  jobId           String
+  job             Job      @relation(fields: [jobId], references: [id])
+  
+  status          InvoiceStatus @default(DRAFT)
+  invoiceDate     DateTime @default(now())
+  dueDate         DateTime
+  paidDate        DateTime?
+  
+  // Amounts
+  subtotal        Float
+  tax             Float    @default(0)
+  discount        Float    @default(0)
+  total           Float
+  
+  // Payment
+  paymentMethod   String?  // CASH, CHECK, CREDIT_CARD, STRIPE, etc.
+  paymentReference String?
+  
+  // Notes
+  notes           String?
+  terms           String?
+  
+  // Email tracking
+  emailSent       Boolean  @default(false)
+  emailSentAt     DateTime?
+  emailOpenedAt   DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  items InvoiceItem[]
+  
+  @@index([jobId])
+  @@index([status])
+  @@index([invoiceNumber])
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+// Invoice Line Items
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  description String
+  quantity    Float
+  rate        Float
+  amount      Float
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([invoiceId])
+}
+
+// ==================== BID MANAGEMENT ====================
+
+// Bids/Proposals
+model Bid {
+  id              String   @id @default(cuid())
+  bidNumber       String   @unique
+  title           String
+  description     String?
+  
+  clientId        String
+  client          Client   @relation(fields: [clientId], references: [id])
+  
+  status          BidStatus @default(DRAFT)
+  submittedDate   DateTime?
+  expirationDate  DateTime?
+  decisionDate    DateTime?
+  
+  // Bid details
+  bidAmount       Float
+  estimatedHours  Float?
+  probability     Int      @default(50) // 0-100
+  
+  // Outcome
+  wonAmount       Float?
+  lostReason      String?
+  
+  // Notes
+  notes           String?
+  
+  createdById     String
+  createdBy       User     @relation("BidCreator", fields: [createdById], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([clientId])
+  @@index([status])
+  @@index([bidNumber])
+}
+
+enum BidStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  WON
+  LOST
+  EXPIRED
+  CANCELLED
 }
 
 // ==================== ACHIEVEMENTS & LEADERBOARDS ====================
