@@ -11,9 +11,12 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  SERVICE_CATALOG, 
+  SERVICE_CATALOG_COMPREHENSIVE, 
   getServicesByCategory,
-  calculateServicePrice 
+  calculateServicePrice,
+  STENCIL_CATALOG,
+  PAINT_CATALOG,
+  CURB_STOP_CATALOG,
 } from '@/lib/services-catalog';
 import {
   Check,
