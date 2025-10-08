@@ -172,7 +172,8 @@ export function AuthForm() {
                     disabled={loading}
                     data-testid="sign-in-button"
                     id="sign-in-button"
-                    onClick={handleSignIn}
+                    name="sign-in"
+                    aria-label="Sign in to your account"
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign In
@@ -261,7 +262,8 @@ export function AuthForm() {
                     disabled={loading}
                     data-testid="sign-up-button"
                     id="sign-up-button"
-                    onClick={handleSignUp}
+                    name="sign-up"
+                    aria-label="Create a new account"
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign Up

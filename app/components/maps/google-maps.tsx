@@ -9,6 +9,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MeasurementTools } from '@/components/map/measurement-tools';
 import { Navigation, Crosshair } from 'lucide-react';
+import { MarkerClusterer } from '@googlemaps/markerclusterer';
+import { encode, decode } from '@googlemaps/polyline-codec';
 
 interface GoogleMapsProps {
   markers?: MapMarker[];
@@ -51,6 +53,10 @@ export function GoogleMaps({
 
   // Drawing manager for measuring areas
   const [drawingManager, setDrawingManager] = useState<google.maps.drawing.DrawingManager | null>(null);
+  
+  // Marker clusterer for efficient marker rendering
+  const [markerClusterer, setMarkerClusterer] = useState<MarkerClusterer | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
   
   // Use refs to store callbacks to prevent re-initialization
   const onMapClickRef = useRef(onMapClick);
@@ -355,18 +361,25 @@ export function GoogleMaps({
     }
   }, [map, mapCenter, mapZoom]);
 
-  // Update markers when they change
+  // Update markers when they change with marker clustering
   useEffect(() => {
     if (!map) return;
 
     // Clear existing markers
-    // Note: In a production app, you'd want to track markers to clear them properly
+    markersRef.current.forEach((marker) => {
+      marker.setMap(null);
+    });
+    markersRef.current = [];
 
-    // Add new markers
-    markers?.forEach((marker) => {
+    // Clear existing clusterer
+    if (markerClusterer) {
+      markerClusterer.clearMarkers();
+    }
+
+    // Create new markers
+    const newMarkers = markers?.map((marker) => {
       const mapMarker = new google.maps.Marker({
         position: marker.position,
-        map,
         title: marker.title,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
@@ -402,8 +415,54 @@ export function GoogleMaps({
         infoWindow.open(map, mapMarker);
         onMarkerClick?.(marker);
       });
-    });
-  }, [map, markers, onMarkerClick]);
+
+      return mapMarker;
+    }) || [];
+
+    markersRef.current = newMarkers;
+
+    // Create or update marker clusterer
+    if (newMarkers.length > 0) {
+      if (markerClusterer) {
+        markerClusterer.clearMarkers();
+        markerClusterer.addMarkers(newMarkers);
+      } else {
+        const clusterer = new MarkerClusterer({
+          map,
+          markers: newMarkers,
+          renderer: {
+            render: ({ count, position }) =>
+              new google.maps.Marker({
+                position,
+                icon: {
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: Math.min(count / 2 + 20, 40),
+                  fillColor: '#FFD700', // Gold
+                  fillOpacity: 0.9,
+                  strokeColor: '#ffffff',
+                  strokeWeight: 3,
+                },
+                label: {
+                  text: String(count),
+                  color: '#000000',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                },
+                zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
+              }),
+          },
+        });
+        setMarkerClusterer(clusterer);
+      }
+    }
+
+    // Cleanup function
+    return () => {
+      markersRef.current.forEach((marker) => {
+        marker.setMap(null);
+      });
+    };
+  }, [map, markers, onMarkerClick, markerClusterer]);
 
   const getMarkerColor = (status: string): string => {
     switch (status) {
