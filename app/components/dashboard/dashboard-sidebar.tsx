@@ -26,6 +26,9 @@ import {
   Calculator,
   Clock,
   Navigation,
+  Palette,
+  UserCircle,
+  Briefcase,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -98,11 +101,14 @@ export function DashboardSidebar({
         ...baseItems,
         { icon: Building2, label: 'Jobs', count: jobs?.length || 0, onClick: () => router.push('/dashboard') },
         { icon: Calculator, label: 'Estimates', onClick: () => router.push('/estimates') },
+        { icon: Briefcase, label: 'Services', onClick: () => router.push('/services') },
         { icon: Users, label: 'Employees', onClick: () => router.push('/hr') },
         { icon: DollarSign, label: 'Payroll', onClick: () => router.push('/payroll') },
         { icon: FileText, label: 'Invoices', onClick: () => router.push('/financials') },
         { icon: BarChart3, label: 'Reports', onClick: () => router.push('/reports') },
         { icon: Calendar, label: 'Schedule', onClick: () => router.push('/schedule') },
+        { icon: Palette, label: 'Theme', onClick: () => router.push('/theme') },
+        { icon: UserCircle, label: 'Profile', onClick: () => router.push('/profile') },
         { icon: Settings, label: 'Settings', onClick: () => router.push('/settings') },
       ];
     }
@@ -112,6 +118,9 @@ export function DashboardSidebar({
       { icon: Building2, label: 'My Jobs', count: filteredJobs?.length || 0, onClick: () => router.push('/dashboard') },
       { icon: Clock, label: 'Timesheet', onClick: () => router.push('/dashboard') },
       { icon: Calendar, label: 'Schedule', onClick: () => router.push('/schedule') },
+      { icon: Briefcase, label: 'Services', onClick: () => router.push('/services') },
+      { icon: UserCircle, label: 'Profile', onClick: () => router.push('/profile') },
+      { icon: Palette, label: 'Theme', onClick: () => router.push('/theme') },
     ];
   };
 

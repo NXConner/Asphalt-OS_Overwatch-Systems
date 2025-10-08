@@ -8,6 +8,10 @@ declare module 'next-auth' {
       role: string;
       firstName?: string;
       lastName?: string;
+      phone?: string;
+      address?: string;
+      bio?: string;
+      createdAt?: Date;
     } & DefaultSession['user'];
   }
 
@@ -15,14 +19,23 @@ declare module 'next-auth' {
     role: string;
     firstName?: string;
     lastName?: string;
+    phone?: string;
+    address?: string;
+    bio?: string;
+    createdAt?: Date;
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT extends DefaultJWT {
+    id: string;
     role: string;
     firstName?: string;
     lastName?: string;
+    phone?: string;
+    address?: string;
+    bio?: string;
+    createdAt?: Date;
   }
 }
 

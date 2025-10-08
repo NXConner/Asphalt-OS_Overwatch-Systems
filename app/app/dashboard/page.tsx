@@ -12,6 +12,7 @@ import { EstimateDialog } from '@/components/dashboard/estimate-dialog';
 import { TimesheetDialog } from '@/components/dashboard/timesheet-dialog';
 import { DirectionsPanel } from '@/components/directions/directions-panel';
 import { ScanLine } from '@/components/ui/scan-line';
+import { WeatherWidget } from '@/components/weather/weather-widget';
 import { MapMarker } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -172,6 +173,11 @@ export default function DashboardPage() {
               }
             }}
           />
+          
+          {/* Weather Widget - Floating overlay */}
+          <div className="absolute top-4 right-4 z-10 w-80 max-w-full">
+            <WeatherWidget location="Richmond,VA,US" />
+          </div>
         </main>
       </div>
 

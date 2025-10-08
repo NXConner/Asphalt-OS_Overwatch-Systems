@@ -48,6 +48,8 @@ model User {
   firstName     String?
   lastName      String?
   phone         String?
+  address       String?
+  bio           String?
   hourlyRate    Float     @default(20.00)
   isActive      Boolean   @default(true)
   hireDate      DateTime  @default(now())
