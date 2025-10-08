@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import { useSession, signOut } from 'next-auth/react';
@@ -24,9 +25,10 @@ import {
   Sun,
   Moon,
   CloudRain,
+  Palette,
 } from 'lucide-react';
 import { GlitchWrapper } from '@/components/ui/glitch-wrapper';
-import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 interface DashboardHeaderProps {
   onTimesheetClick?: () => void;
@@ -45,15 +47,16 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: '/' });
   };
 
   return (
-    <header className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 border-b border-blue-500/30 shadow-lg relative overflow-hidden">
+    <header className="bg-card border-b border-border shadow-lg relative overflow-hidden">
       {/* Animated gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 animate-pulse" />
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 animate-pulse" />
       
       <div className="relative z-10 flex items-center justify-between px-4 py-3">
         {/* Left section */}
@@ -62,21 +65,21 @@ export function DashboardHeader({
             variant="ghost"
             size="sm"
             onClick={onSidebarToggle}
-            className="text-white hover:bg-white/10"
+            className="hover:bg-accent/10"
           >
             <Menu className="h-5 w-5" />
           </Button>
           
           <GlitchWrapper>
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-sm">AOS</span>
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                <span className="text-primary-foreground font-bold text-sm">AOS</span>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white tracking-tight">
+                <h1 className="text-lg font-bold tracking-tight">
                   Asphalt OS
                 </h1>
-                <p className="text-xs text-blue-300">Overwatch Systems</p>
+                <p className="text-xs text-muted-foreground">Overwatch Systems</p>
               </div>
             </div>
           </GlitchWrapper>
@@ -89,7 +92,7 @@ export function DashboardHeader({
               variant="ghost"
               size="sm"
               onClick={onWeatherClick}
-              className="text-white hover:bg-white/10"
+              className="hover:bg-accent/10"
               title="Toggle Weather Widget"
             >
               <CloudRain className="h-4 w-4 mr-2" />
@@ -103,7 +106,7 @@ export function DashboardHeader({
                 variant="ghost"
                 size="sm"
                 onClick={onDirectionsClick}
-                className="text-white hover:bg-white/10"
+                className="hover:bg-accent/10"
               >
                 <Navigation className="h-4 w-4 mr-2" />
                 Directions
@@ -113,7 +116,7 @@ export function DashboardHeader({
                 variant="ghost"
                 size="sm"
                 onClick={onSettingsClick}
-                className="text-white hover:bg-white/10"
+                className="hover:bg-accent/10"
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
@@ -126,7 +129,7 @@ export function DashboardHeader({
               variant="ghost"
               size="sm"
               onClick={onTimesheetClick}
-              className="text-white hover:bg-white/10"
+              className="hover:bg-accent/10"
             >
               <Clock className="h-4 w-4 mr-2" />
               Timesheet
@@ -136,12 +139,23 @@ export function DashboardHeader({
 
         {/* Right section */}
         <div className="flex items-center gap-3">
+          {/* Theme Customizer Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push('/theme')}
+            className="hover:bg-accent/10"
+            title="Customize Theme"
+          >
+            <Palette className="h-4 w-4" />
+          </Button>
+
           {/* Theme Toggle */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="text-white hover:bg-white/10"
+            className="hover:bg-accent/10"
           >
             {theme === 'dark' ? (
               <Sun className="h-4 w-4" />
@@ -153,7 +167,7 @@ export function DashboardHeader({
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
+              <Button variant="ghost" size="sm" className="hover:bg-accent/10">
                 <User className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">{session?.user?.name}</span>
                 {session?.user?.role && (
@@ -169,6 +183,10 @@ export function DashboardHeader({
               <DropdownMenuItem onClick={() => window.location.href = '/profile'}>
                 <User className="mr-2 h-4 w-4" />
                 Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.location.href = '/theme'}>
+                <Palette className="mr-2 h-4 w-4" />
+                Theme Customizer
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onSettingsClick}>
                 <Settings className="mr-2 h-4 w-4" />

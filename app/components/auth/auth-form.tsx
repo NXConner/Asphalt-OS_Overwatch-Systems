@@ -168,10 +168,11 @@ export function AuthForm() {
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full" 
+                    className="w-full bg-primary hover:bg-primary/90" 
                     disabled={loading}
                     data-testid="sign-in-button"
                     id="sign-in-button"
+                    onClick={handleSignIn}
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign In
@@ -256,10 +257,11 @@ export function AuthForm() {
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full" 
+                    className="w-full bg-primary hover:bg-primary/90" 
                     disabled={loading}
                     data-testid="sign-up-button"
                     id="sign-up-button"
+                    onClick={handleSignUp}
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Create Account

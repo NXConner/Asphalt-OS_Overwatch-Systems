@@ -1,11 +1,14 @@
 
+
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { MapMarker } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { MeasurementTools } from '@/components/map/measurement-tools';
+import { Navigation, Crosshair } from 'lucide-react';
 
 interface GoogleMapsProps {
   markers?: MapMarker[];
@@ -44,7 +47,7 @@ export function GoogleMaps({
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(center || DEFAULT_CENTER);
   const [mapZoom, setMapZoom] = useState<number>(zoom || 12);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const [locatingUser, setLocatingUser] = useState(false);
 
   // Drawing manager for measuring areas
   const [drawingManager, setDrawingManager] = useState<google.maps.drawing.DrawingManager | null>(null);
@@ -67,7 +70,7 @@ export function GoogleMaps({
     onMapLoadRef.current = onMapLoad;
   }, [onMapLoad]);
 
-  // Get user's current location on component mount
+  // Get user's current location on component mount (silently, no banner)
   useEffect(() => {
     if (!center) {
       // Only try to get location if no center is provided
@@ -79,36 +82,76 @@ export function GoogleMaps({
               lng: position.coords.longitude
             };
             setUserLocation(userPos);
-            setMapCenter(userPos);
-            setMapZoom(15); // Zoom in closer when user location is found
-            setLocationError(null);
+            // Don't automatically center on user location, just store it
           },
           (error) => {
             console.warn('Geolocation error:', error.message);
-            setLocationError(error.message);
-            // Fall back to Patrick County, Virginia
-            setMapCenter(DEFAULT_CENTER);
-            setMapZoom(12);
+            // Silently use default location
+            setUserLocation(null);
           },
           {
-            enableHighAccuracy: true,
+            enableHighAccuracy: false,
             timeout: 5000,
-            maximumAge: 0
+            maximumAge: 60000 // Cache location for 1 minute
           }
         );
-      } else {
-        console.warn('Geolocation not supported by browser');
-        setLocationError('Geolocation not supported');
-        // Fall back to Patrick County, Virginia
-        setMapCenter(DEFAULT_CENTER);
-        setMapZoom(12);
       }
-    } else {
-      // Use provided center
-      setMapCenter(center);
-      setMapZoom(zoom || 12);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Function to locate user and fly to their location
+  const locateMe = () => {
+    if (!map) return;
+    
+    setLocatingUser(true);
+    
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userPos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          setUserLocation(userPos);
+          
+          // Fly to user location
+          map.panTo(userPos);
+          map.setZoom(16);
+          
+          // Add or update user location marker
+          new google.maps.Marker({
+            position: userPos,
+            map: map,
+            title: 'Your Location',
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: '#FFD700', // Gold
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 3,
+            },
+            animation: google.maps.Animation.DROP,
+          });
+          
+          setLocatingUser(false);
+        },
+        (error) => {
+          console.error('Geolocation error:', error.message);
+          setLocatingUser(false);
+          alert('Unable to get your location. Please enable location services.');
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      alert('Geolocation is not supported by your browser');
+      setLocatingUser(false);
+    }
+  };
 
   // Initialize Google Maps
   useEffect(() => {
@@ -184,37 +227,20 @@ export function GoogleMaps({
         // Get saved map type preference from localStorage
         const savedMapType = localStorage.getItem('mapType') || 'hybrid';
 
-        // Initialize map with user location or Patrick County default
+        // Initialize map with default center (not user location)
         const mapInstance = new google.maps.Map(mapRef.current, {
           center: mapCenter,
           zoom: mapZoom,
-          mapTypeId: savedMapType as google.maps.MapTypeId, // Use saved preference
-          mapTypeControl: false, // Remove map type controls from map
+          mapTypeId: savedMapType as google.maps.MapTypeId,
+          mapTypeControl: false,
           zoomControl: true,
           streetViewControl: true,
           fullscreenControl: true,
           clickableIcons: false,
-          gestureHandling: 'greedy', // Enable scroll wheel zoom without ctrl key
+          gestureHandling: 'greedy',
         });
 
         setMap(mapInstance);
-
-        // Add user location marker if available
-        if (userLocation) {
-          new google.maps.Marker({
-            position: userLocation,
-            map: mapInstance,
-            title: 'Your Location',
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: '#4285F4',
-              fillOpacity: 1,
-              strokeColor: '#ffffff',
-              strokeWeight: 3,
-            },
-          });
-        }
 
         // Notify parent component of map load (only once)
         const centerLatLng = new google.maps.LatLng(mapCenter.lat, mapCenter.lng);
@@ -233,19 +259,19 @@ export function GoogleMaps({
               ],
             },
             polygonOptions: {
-              fillColor: '#60B5FF',
+              fillColor: '#FFD700', // Gold
               fillOpacity: 0.3,
               strokeWeight: 2,
-              strokeColor: '#60B5FF',
+              strokeColor: '#FFD700',
               clickable: false,
               editable: true,
               zIndex: 1,
             },
             rectangleOptions: {
-              fillColor: '#60B5FF',
+              fillColor: '#FFD700',
               fillOpacity: 0.3,
               strokeWeight: 2,
-              strokeColor: '#60B5FF',
+              strokeColor: '#FFD700',
               clickable: false,
               editable: true,
               zIndex: 1,
@@ -322,13 +348,13 @@ export function GoogleMaps({
       }
     };
 
-    // Only initialize map once, but wait for mapCenter to be set
+    // Only initialize map once
     if (!map && mapCenter) {
       initMap();
     }
-  }, [map, mapCenter, mapZoom, userLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map, mapCenter, mapZoom]); // eslint-disable-line react-hooks/exhaustive-deps
   
-  // Update map center and zoom when they change (e.g., when user location is found)
+  // Update map center and zoom when they change
   useEffect(() => {
     if (map && mapCenter) {
       map.setCenter(mapCenter);
@@ -452,7 +478,7 @@ export function GoogleMaps({
       
       {/* Measured area display */}
       {enableMeasuring && measuredArea > 0 && (
-        <div className="absolute top-96 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg animate-in fade-in slide-in-from-right z-50">
+        <div className="absolute top-96 right-4 bg-card/90 backdrop-blur-sm p-3 rounded-lg shadow-lg animate-in fade-in slide-in-from-right z-50 border">
           <div className="text-sm font-medium">Measured Area</div>
           <div className="text-lg font-bold text-primary">
             {measuredArea.toLocaleString()} sq ft
@@ -464,7 +490,7 @@ export function GoogleMaps({
       )}
 
       {/* Status legend */}
-      <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg z-50">
+      <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm p-3 rounded-lg shadow-lg z-50 border">
         <div className="text-sm font-medium mb-2">Job Status</div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -486,45 +512,22 @@ export function GoogleMaps({
         </div>
       </div>
 
-      {/* Location status indicator */}
-      {!center && (
-        <div className="absolute top-20 left-4 bg-white/95 backdrop-blur-sm p-2 rounded-lg shadow-lg z-50 text-xs">
-          {userLocation ? (
-            <div className="flex items-center gap-2 text-green-600">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              <span>Using your location</span>
-            </div>
-          ) : locationError ? (
-            <div className="text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-muted-foreground"></div>
-                <span>Default Location</span>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-gray-600">
-              <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
-              <span>Getting location...</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Re-center button (if user location available) */}
-      {userLocation && map && (
-        <button
-          onClick={() => {
-            map.setCenter(userLocation);
-            map.setZoom(15);
-          }}
-          className="absolute top-20 right-4 bg-white hover:bg-gray-50 p-2 rounded-lg shadow-lg z-50 transition-colors"
-          title="Center on your location"
+      {/* GPS Locate Me Button */}
+      {map && (
+        <Button
+          onClick={locateMe}
+          disabled={locatingUser}
+          size="sm"
+          className="absolute top-20 right-4 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg z-50 gap-2"
+          title="Locate Me"
         >
-          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </button>
+          {locatingUser ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
+          ) : (
+            <Crosshair className="h-4 w-4" />
+          )}
+          <span className="text-xs font-medium">Locate Me</span>
+        </Button>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useSession } from 'next-auth/react';
@@ -38,7 +39,7 @@ export default function DashboardPage() {
   const [radarRadius, setRadarRadius] = useState(5);
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
   const [mapCenter, setMapCenter] = useState<google.maps.LatLng | null>(null);
-  const [weatherWidgetVisible, setWeatherWidgetVisible] = useState(true);
+  const [weatherWidgetVisible, setWeatherWidgetVisible] = useState(false); // Changed to false by default
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -202,7 +203,7 @@ export default function DashboardPage() {
             enabled={radarEnabled}
           />
           
-          {/* Draggable Weather Widget */}
+          {/* Draggable Weather Widget - Hidden by default */}
           <DraggableWeatherWidget 
             location="Richmond,VA,US"
             showRadar={true}

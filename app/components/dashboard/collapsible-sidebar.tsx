@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -33,8 +34,6 @@ import {
   BookOpen,
   Box,
   UserCheck,
-  Menu,
-  X,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -69,7 +68,7 @@ export function CollapsibleSidebar({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sidebarStyle, setSidebarStyle] = useState({
-    background: 'bg-white',
+    background: 'bg-card',
     blur: false,
     opacity: 100,
   });
@@ -109,11 +108,11 @@ export function CollapsibleSidebar({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'COMPLETED': return 'bg-green-100 text-green-800';
-      case 'POSSIBLE': return 'bg-yellow-100 text-yellow-800';
-      case 'LOST': return 'bg-red-100 text-red-800';
-      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'COMPLETED': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'POSSIBLE': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'LOST': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
   };
 
@@ -179,12 +178,12 @@ export function CollapsibleSidebar({
 
   // Get sidebar background styles based on preferences
   const getSidebarClasses = () => {
-    const baseClasses = 'border-r border-gray-200 flex flex-col relative z-50 transition-all duration-300';
+    const baseClasses = 'border-r border-border flex flex-col relative z-50 transition-all duration-300';
     
     if (sidebarStyle.blur) {
       return cn(
         baseClasses,
-        'backdrop-blur-xl bg-white/70',
+        'backdrop-blur-xl bg-card/70',
         collapsed ? 'w-16' : 'w-80'
       );
     }
@@ -201,7 +200,7 @@ export function CollapsibleSidebar({
     return (
       <TooltipProvider delayDuration={0}>
         <aside className={getSidebarClasses()}>
-          <div className="p-2 flex justify-center border-b border-gray-200">
+          <div className="p-2 flex justify-center border-b border-border">
             <Button
               variant="ghost"
               size="icon"
@@ -222,13 +221,13 @@ export function CollapsibleSidebar({
                       size="icon"
                       className={cn(
                         "w-full h-10 relative",
-                        item.active && "bg-blue-600 hover:bg-blue-700"
+                        item.active && "bg-primary hover:bg-primary/90"
                       )}
                       onClick={item.onClick}
                     >
                       <item.icon className="h-5 w-5" />
                       {item.count !== undefined && item.count > 0 && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-red-500 text-white text-xs rounded-full">
+                        <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-destructive text-destructive-foreground text-xs rounded-full">
                           {item.count > 9 ? '9+' : item.count}
                         </span>
                       )}
@@ -250,8 +249,8 @@ export function CollapsibleSidebar({
   return (
     <aside className={getSidebarClasses()}>
       {/* Header with Toggle */}
-      <div className="p-4 flex items-center justify-between border-b border-gray-200">
-        <h1 className="text-lg font-bold text-blue-600">AsphaltPro</h1>
+      <div className="p-4 flex items-center justify-between border-b border-border">
+        <h1 className="text-lg font-bold text-primary">AsphaltPro</h1>
         <Button
           variant="ghost"
           size="icon"
@@ -271,7 +270,7 @@ export function CollapsibleSidebar({
               variant={item.active ? "default" : "ghost"}
               className={cn(
                 "w-full justify-start",
-                item.active && "bg-blue-600 hover:bg-blue-700"
+                item.active && "bg-primary hover:bg-primary/90"
               )}
               onClick={item.onClick}
             >
@@ -296,7 +295,7 @@ export function CollapsibleSidebar({
           <Button
             size="sm"
             onClick={onNewJob}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-primary hover:bg-primary/90"
           >
             <Plus className="h-4 w-4 mr-1" />
             New
@@ -306,7 +305,7 @@ export function CollapsibleSidebar({
         {/* Search and Filter */}
         <div className="space-y-2 mb-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search jobs..."
               value={searchTerm}
@@ -335,7 +334,7 @@ export function CollapsibleSidebar({
           <div className="space-y-3">
             {filteredJobs?.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
-                <MapPin className="mx-auto h-12 w-12 text-gray-300 mb-2" />
+                <MapPin className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
                 <p className="text-sm">No jobs found</p>
                 <Button
                   variant="outline"
@@ -438,24 +437,24 @@ export function CollapsibleSidebar({
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-muted-foreground">Summary</h3>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-yellow-50 p-2 rounded">
-                  <div className="font-medium text-yellow-800">
+                <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded">
+                  <div className="font-medium text-yellow-800 dark:text-yellow-200">
                     {jobs?.filter(j => j.status === 'POSSIBLE')?.length || 0}
                   </div>
-                  <div className="text-yellow-600">Possible</div>
+                  <div className="text-yellow-600 dark:text-yellow-400">Possible</div>
                 </div>
-                <div className="bg-green-50 p-2 rounded">
-                  <div className="font-medium text-green-800">
+                <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
+                  <div className="font-medium text-green-800 dark:text-green-200">
                     {jobs?.filter(j => j.status === 'COMPLETED')?.length || 0}
                   </div>
-                  <div className="text-green-600">Completed</div>
+                  <div className="text-green-600 dark:text-green-400">Completed</div>
                 </div>
               </div>
-              <div className="bg-blue-50 p-2 rounded text-xs">
-                <div className="font-medium text-blue-800">
+              <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded text-xs">
+                <div className="font-medium text-blue-800 dark:text-blue-200">
                   ${jobs?.reduce((sum, job) => sum + (job.estimatedCost || 0), 0)?.toLocaleString() || '0'}
                 </div>
-                <div className="text-blue-600">Total Pipeline</div>
+                <div className="text-blue-600 dark:text-blue-400">Total Pipeline</div>
               </div>
             </div>
           </>
