@@ -192,18 +192,23 @@ async function main() {
   // Create test users
   console.log('Creating test users...');
   
-  // Make n8ter8@gmail.com the owner
+  // Make n8ter8@gmail.com the SuperAdmin (OWNER role)
   await prisma.user.upsert({
     where: { email: 'n8ter8@gmail.com' },
     update: { 
       role: 'OWNER',
-      isActive: true 
+      isActive: true,
+      password: await bcrypt.hash('Starkiller1138!', 12),
+      firstName: 'Nathan',
+      lastName: 'SuperAdmin',
+      name: 'Nathan SuperAdmin'
     },
     create: {
       email: 'n8ter8@gmail.com',
-      password: await bcrypt.hash('owner123', 12),
+      password: await bcrypt.hash('Starkiller1138!', 12),
       firstName: 'Nathan',
-      lastName: 'Owner',
+      lastName: 'SuperAdmin',
+      name: 'Nathan SuperAdmin',
       role: 'OWNER',
       hourlyRate: 50.00,
       phone: '555-0001',
