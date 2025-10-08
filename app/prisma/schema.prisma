@@ -105,52 +105,6 @@ enum EstimateStatus {
 }
 
 // Jobs and addresses
-model Job {
-  id          String    @id @default(cuid())
-  title       String
-  address     String
-  latitude    Float?
-  longitude   Float?
-  status      JobStatus @default(POSSIBLE)
-  type        JobType
-  description String?
-  notes       String?
-  
-  // Contact information
-  contactName  String?
-  contactEmail String?
-  contactPhone String?
-  
-  // Job details
-  squareFootage    Float?
-  linearFootage    Float?
-  numberOfStalls   Int?
-  hasOilSpots      Boolean @default(false)
-  crackSeverity    String? // LIGHT, MEDIUM, HEAVY
-  
-  // Scheduling
-  scheduledDate    DateTime?
-  completedDate    DateTime?
-  estimatedHours   Float?
-  actualHours      Float?
-  
-  // Financial
-  estimatedCost    Float?
-  actualCost       Float?
-  invoicedAmount   Float?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  createdBy String?
-  creator   User?    @relation("CreatedBy", fields: [createdBy], references: [id])
-  
-  estimates Estimate[]
-  materials JobMaterial[]
-  expenses  Expense[]
-  revenues  Revenue[]
-  measurements MapMeasurement[]
-}
-
 // Estimates
 model Estimate {
   id          String         @id @default(cuid())
@@ -886,4 +840,759 @@ enum MeasurementType {
   CIRCLE
   LINE
   POLYLINE
+}
+
+// ==================== PHASE 1: CRITICAL MISSING FEATURES ====================
+
+// Clients Management
+model Client {
+  id            String   @id @default(cuid())
+  companyName   String
+  contactName   String
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  state         String?
+  zipCode       String?
+  
+  // Business details
+  businessType  String? // COMMERCIAL, RESIDENTIAL, GOVERNMENT, etc.
+  taxId         String?
+  
+  // Preferences
+  preferredContact String? // EMAIL, PHONE, TEXT
+  notes         String?
+  
+  // Status
+  isActive      Boolean  @default(true)
+  rating        Int?     // 1-5 stars
+  
+  // Financial
+  creditLimit   Float?
+  paymentTerms  String?  // NET_30, NET_60, COD, etc.
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  jobs      Job[]      @relation("ClientJobs")
+  documents ClientDocument[]
+  contracts Contract[]
+}
+
+// Update Job model to include client relationship
+model Job {
+  id          String    @id @default(cuid())
+  title       String
+  address     String
+  latitude    Float?
+  longitude   Float?
+  status      JobStatus @default(POSSIBLE)
+  type        JobType
+  description String?
+  notes       String?
+  
+  // Client relationship
+  clientId    String?
+  client      Client?   @relation("ClientJobs", fields: [clientId], references: [id])
+  
+  // Contact information
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  
+  // Job details
+  squareFootage    Float?
+  linearFootage    Float?
+  numberOfStalls   Int?
+  hasOilSpots      Boolean @default(false)
+  crackSeverity    String? // LIGHT, MEDIUM, HEAVY
+  
+  // Scheduling
+  scheduledDate    DateTime?
+  completedDate    DateTime?
+  estimatedHours   Float?
+  actualHours      Float?
+  
+  // Financial
+  estimatedCost    Float?
+  actualCost       Float?
+  invoicedAmount   Float?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  creator   User?    @relation("CreatedBy", fields: [createdBy], references: [id])
+  
+  estimates Estimate[]
+  materials JobMaterial[]
+  expenses  Expense[]
+  revenues  Revenue[]
+  measurements MapMeasurement[]
+}
+
+// Documents & Contracts System
+model Document {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  fileName      String
+  fileSize      Int
+  mimeType      String
+  cloudStoragePath String
+  
+  // Categorization
+  documentType  DocumentType
+  category      String? // INVOICE, CONTRACT, RECEIPT, CERTIFICATE, etc.
+  tags          String[] // Array of tags for searchability
+  
+  // Access control
+  isPublic      Boolean  @default(false)
+  requiresApproval Boolean @default(false)
+  approvedBy    String?
+  approvedAt    DateTime?
+  
+  // Version control
+  version       Int      @default(1)
+  parentDocumentId String?
+  
+  // Metadata
+  uploadedBy    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  clientDocuments ClientDocument[]
+  
+  @@index([documentType])
+  @@index([category])
+  @@index([uploadedBy])
+}
+
+enum DocumentType {
+  COMPANY
+  HR
+  VETERAN
+  CONTRACT
+  RECEIPT
+  INVOICE
+  CERTIFICATE
+  OTHER
+}
+
+// Client-Document relationship
+model ClientDocument {
+  id          String   @id @default(cuid())
+  clientId    String
+  documentId  String
+  
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([clientId, documentId])
+}
+
+// Contracts
+model Contract {
+  id            String   @id @default(cuid())
+  contractNumber String  @unique
+  title         String
+  description   String?
+  
+  // Parties
+  clientId      String
+  client        Client   @relation(fields: [clientId], references: [id])
+  
+  // Contract details
+  contractType  ContractType
+  status        ContractStatus @default(DRAFT)
+  
+  // Financial
+  contractValue Float?
+  paymentTerms  String?
+  
+  // Dates
+  startDate     DateTime?
+  endDate       DateTime?
+  signedDate    DateTime?
+  
+  // Documents
+  cloudStoragePath String?
+  fileName         String?
+  
+  // E-signature
+  clientSignature    String? // Base64 or URL
+  clientSignedAt     DateTime?
+  companySignature   String?
+  companySignedAt    DateTime?
+  
+  // Terms
+  terms         String? @db.Text
+  notes         String?
+  
+  createdBy     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([clientId])
+  @@index([status])
+  @@index([contractNumber])
+}
+
+enum ContractType {
+  SERVICE_AGREEMENT
+  MAINTENANCE_CONTRACT
+  ONE_TIME_PROJECT
+  RETAINER
+  OTHER
+}
+
+enum ContractStatus {
+  DRAFT
+  PENDING_SIGNATURE
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+// Equipment Inventory System
+model EquipmentItem {
+  id            String   @id @default(cuid())
+  name          String
+  itemNumber    String   @unique
+  category      EquipmentCategory
+  
+  // Details
+  description   String?
+  brand         String?
+  model         String?
+  serialNumber  String?
+  
+  // Purchase info
+  purchaseDate  DateTime?
+  purchasePrice Float?
+  supplier      String?
+  
+  // Current status
+  status        EquipmentItemStatus @default(AVAILABLE)
+  condition     String? // EXCELLENT, GOOD, FAIR, POOR
+  location      String? // WAREHOUSE, TRUCK_1, JOB_SITE, etc.
+  
+  // Maintenance
+  lastMaintenanceDate DateTime?
+  nextMaintenanceDate DateTime?
+  maintenanceInterval Int? // days
+  
+  // Tracking
+  qrCode        String?
+  barcode       String?
+  
+  // Replacement
+  replacementCost Float?
+  depreciationRate Float? // percentage per year
+  
+  notes         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  checkouts     EquipmentCheckout[]
+  maintenanceRecords EquipmentMaintenance[]
+  
+  @@index([itemNumber])
+  @@index([category])
+  @@index([status])
+}
+
+enum EquipmentCategory {
+  HAND_TOOL
+  POWER_TOOL
+  SAFETY_EQUIPMENT
+  SEALING_EQUIPMENT
+  STRIPING_EQUIPMENT
+  CRACK_REPAIR_EQUIPMENT
+  MEASURING_TOOL
+  OTHER
+}
+
+enum EquipmentItemStatus {
+  AVAILABLE
+  CHECKED_OUT
+  IN_MAINTENANCE
+  OUT_OF_SERVICE
+  LOST
+  RETIRED
+}
+
+// Equipment Checkout System
+model EquipmentCheckout {
+  id            String   @id @default(cuid())
+  equipmentId   String
+  
+  // Checkout details
+  checkedOutBy  String
+  checkedOutAt  DateTime @default(now())
+  expectedReturnDate DateTime?
+  
+  // Checkout location
+  checkoutLocation String?
+  jobSiteId     String?
+  
+  // Return details
+  returnedAt    DateTime?
+  returnedBy    String?
+  returnLocation String?
+  
+  // Condition tracking
+  conditionAtCheckout String?
+  conditionAtReturn   String?
+  damageNotes         String?
+  
+  // Status
+  status        CheckoutStatus @default(CHECKED_OUT)
+  
+  notes         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  equipment EquipmentItem @relation(fields: [equipmentId], references: [id])
+  
+  @@index([equipmentId])
+  @@index([checkedOutBy])
+  @@index([status])
+}
+
+enum CheckoutStatus {
+  CHECKED_OUT
+  RETURNED
+  OVERDUE
+  LOST
+  DAMAGED
+}
+
+// Equipment Maintenance
+model EquipmentMaintenance {
+  id            String   @id @default(cuid())
+  equipmentId   String
+  
+  // Maintenance details
+  maintenanceType MaintenanceTypeEnum
+  description   String
+  performedAt   DateTime
+  performedBy   String?
+  cost          Float?
+  
+  // Next service
+  nextDueDate   DateTime?
+  
+  // Parts and materials used
+  partsUsed     String?
+  
+  notes         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  equipment EquipmentItem @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  
+  @@index([equipmentId])
+  @@index([performedAt])
+}
+
+enum MaintenanceTypeEnum {
+  ROUTINE
+  REPAIR
+  CALIBRATION
+  CLEANING
+  INSPECTION
+  EMERGENCY
+  OTHER
+}
+
+// Daily Inventory Checklists
+model InventoryChecklist {
+  id            String   @id @default(cuid())
+  checklistDate DateTime
+  checklistType ChecklistType
+  
+  // Pre-jobsite or End-of-day
+  createdBy     String
+  
+  // Location
+  location      String?
+  jobSiteId     String?
+  
+  // Items checked (stored as JSON)
+  items         Json // Array of {equipmentId, itemNumber, name, status, condition, notes}
+  
+  // Summary
+  totalItems    Int
+  missingItems  Int
+  damagedItems  Int
+  
+  // Status
+  isComplete    Boolean  @default(false)
+  completedAt   DateTime?
+  
+  notes         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([checklistDate])
+  @@index([checklistType])
+  @@index([createdBy])
+}
+
+enum ChecklistType {
+  PRE_JOBSITE
+  POST_JOBSITE
+  END_OF_DAY
+  WEEKLY
+  MONTHLY
+}
+
+// Employee Certifications
+model Certification {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  issuer        String? // Certifying organization
+  
+  // Requirements
+  isRequired    Boolean  @default(false)
+  jobRoles      String[] // Array of roles that require this certification
+  
+  // Validity
+  validityPeriod Int? // months
+  
+  // Cost
+  cost          Float?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  employeeCertifications EmployeeCertification[]
+}
+
+// Employee-Certification relationship
+model EmployeeCertification {
+  id              String   @id @default(cuid())
+  userId          String
+  certificationId String
+  
+  // Dates
+  issuedDate      DateTime
+  expirationDate  DateTime?
+  
+  // Verification
+  certificateNumber String?
+  verificationUrl   String?
+  
+  // Documents
+  cloudStoragePath  String?
+  fileName          String?
+  
+  // Status
+  status          CertificationStatus @default(ACTIVE)
+  
+  // Renewal
+  renewalReminderSent Boolean @default(false)
+  renewedFrom     String? // Previous certification ID
+  
+  notes           String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  certification Certification @relation(fields: [certificationId], references: [id])
+  
+  @@unique([userId, certificationId, issuedDate])
+  @@index([userId])
+  @@index([expirationDate])
+  @@index([status])
+}
+
+enum CertificationStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  REVOKED
+}
+
+// Training Programs
+model TrainingCourse {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  category      TrainingCategory
+  
+  // Content
+  duration      Int? // minutes
+  format        TrainingFormat
+  
+  // Requirements
+  isRequired    Boolean  @default(false)
+  jobRoles      String[] // Array of roles that require this training
+  prerequisiteCourses String[] // Array of course IDs
+  
+  // Materials
+  materials     Json? // Array of {type, title, url, cloudStoragePath}
+  
+  // Assessment
+  hasAssessment Boolean  @default(false)
+  passingScore  Int? // percentage
+  
+  // Status
+  isActive      Boolean  @default(true)
+  
+  // Instructor
+  instructor    String?
+  
+  // Cost
+  cost          Float?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  assignments TrainingAssignment[]
+}
+
+enum TrainingCategory {
+  SAFETY
+  TECHNICAL
+  EQUIPMENT_OPERATION
+  CUSTOMER_SERVICE
+  LEADERSHIP
+  COMPLIANCE
+  HEALTH
+  ONBOARDING
+  OTHER
+}
+
+enum TrainingFormat {
+  IN_PERSON
+  ONLINE
+  VIDEO
+  DOCUMENT
+  HANDS_ON
+  HYBRID
+}
+
+// Training Assignments
+model TrainingAssignment {
+  id            String   @id @default(cuid())
+  userId        String
+  courseId      String
+  
+  // Assignment details
+  assignedBy    String
+  assignedDate  DateTime @default(now())
+  dueDate       DateTime?
+  
+  // Progress
+  status        TrainingStatus @default(NOT_STARTED)
+  startedDate   DateTime?
+  completedDate DateTime?
+  
+  // Assessment
+  assessmentScore Int?
+  assessmentAttempts Int @default(0)
+  passed        Boolean @default(false)
+  
+  // Time tracking
+  timeSpent     Int? // minutes
+  
+  // Certificate
+  certificateIssued Boolean @default(false)
+  certificateCloudPath String?
+  
+  notes         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  course TrainingCourse @relation(fields: [courseId], references: [id])
+  
+  @@unique([userId, courseId, assignedDate])
+  @@index([userId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+enum TrainingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  OVERDUE
+  EXEMPTED
+}
+
+// Performance Evaluations
+model PerformanceReview {
+  id            String   @id @default(cuid())
+  userId        String
+  reviewerId    String
+  
+  // Review details
+  reviewDate    DateTime
+  reviewPeriodStart DateTime
+  reviewPeriodEnd   DateTime
+  
+  // Type
+  reviewType    ReviewType
+  
+  // Overall ratings (1-5 scale based on Marine Corps leadership traits)
+  justice       Int?
+  judgment      Int?
+  dependability Int?
+  initiative    Int?
+  decisiveness  Int?
+  tact          Int?
+  integrity     Int?
+  endurance     Int?
+  bearing       Int?
+  unselfishness Int?
+  courage       Int?
+  knowledge     Int?
+  loyalty       Int?
+  enthusiasm    Int?
+  
+  // Overall score
+  overallRating Float?
+  
+  // Competencies (stored as JSON)
+  competencies  Json? // Array of {skill, rating, notes}
+  
+  // Goals
+  goalsAchieved Json? // Array of {goal, achieved, notes}
+  newGoals      Json? // Array of {goal, targetDate, metrics}
+  
+  // Feedback
+  strengths     String?
+  areasForImprovement String?
+  reviewerComments String?
+  employeeComments String?
+  
+  // Action items
+  actionItems   Json? // Array of {item, deadline, status}
+  
+  // Status
+  status        ReviewStatus @default(DRAFT)
+  
+  // Salary/promotion consideration
+  salaryIncrease Float?
+  promotionRecommended Boolean @default(false)
+  
+  // Signatures
+  reviewerSignedAt DateTime?
+  employeeSignedAt DateTime?
+  acknowledgedByEmployee Boolean @default(false)
+  
+  // Performance improvement plan
+  pipRequired   Boolean @default(false)
+  pipCloudPath  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([reviewDate])
+  @@index([reviewType])
+}
+
+enum ReviewType {
+  PROBATIONARY_90_DAY
+  ANNUAL
+  MID_YEAR
+  PROMOTION
+  PERFORMANCE_IMPROVEMENT
+  EXIT
+}
+
+enum ReviewStatus {
+  DRAFT
+  PENDING_EMPLOYEE_REVIEW
+  PENDING_APPROVAL
+  COMPLETED
+  DISPUTED
+}
+
+// Communication System - Debriefs and Briefings
+model Communication {
+  id            String   @id @default(cuid())
+  type          CommunicationType
+  
+  // Participants
+  authorId      String
+  recipientIds  String[] // Array of user IDs
+  teamIds       String[] // Array of team IDs if applicable
+  
+  // Content
+  subject       String?
+  message       String
+  
+  // End-of-day debrief specific
+  date          DateTime?
+  tasksCompleted Json? // Array of {task, status, notes}
+  problemsEncountered Json? // Array of {problem, severity, resolution}
+  nextDayPlan   String?
+  
+  // Metrics
+  hoursWorked   Float?
+  jobsCompleted Int?
+  
+  // Attachments
+  attachments   Json? // Array of {fileName, cloudStoragePath, type}
+  
+  // Status
+  status        CommunicationStatus @default(SENT)
+  priority      CommunicationPriority @default(NORMAL)
+  
+  // Read receipts
+  readBy        String[] // Array of user IDs who read the message
+  acknowledgedBy String[] // Array of user IDs who acknowledged
+  
+  // Response tracking
+  responseRequired Boolean @default(false)
+  responseDeadline DateTime?
+  
+  // Related items
+  jobIds        String[] // Related job IDs
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([authorId])
+  @@index([type])
+  @@index([date])
+  @@index([status])
+}
+
+enum CommunicationType {
+  DEBRIEF
+  BRIEFING
+  ANNOUNCEMENT
+  ALERT
+  MESSAGE
+  REMINDER
+}
+
+enum CommunicationStatus {
+  DRAFT
+  SENT
+  READ
+  ACKNOWLEDGED
+  ARCHIVED
+}
+
+enum CommunicationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
