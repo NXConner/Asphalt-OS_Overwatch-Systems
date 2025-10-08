@@ -20,7 +20,8 @@ interface GoogleMapsProps {
   jobId?: string;
 }
 
-const BUSINESS_LOCATION = { lat: 36.6484, lng: -80.2737 }; // Stuart, VA
+// Patrick County, Virginia (default location - centered above the county)
+const PATRICK_COUNTY_CENTER = { lat: 36.7141, lng: -80.2937 }; // Centered above Patrick County
 
 export function GoogleMaps({
   markers = [],
@@ -28,8 +29,8 @@ export function GoogleMaps({
   onMapClick,
   onAreaMeasured,
   onMapLoad,
-  center = BUSINESS_LOCATION,
-  zoom = 12,
+  center,
+  zoom,
   enableMeasuring = false,
   enableAISurfaceDetection = false,
   jobId
@@ -40,6 +41,10 @@ export function GoogleMaps({
   const [error, setError] = useState<string | null>(null);
   const [measuredArea, setMeasuredArea] = useState<number>(0);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(center || PATRICK_COUNTY_CENTER);
+  const [mapZoom, setMapZoom] = useState<number>(zoom || 12);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // Drawing manager for measuring areas
   const [drawingManager, setDrawingManager] = useState<google.maps.drawing.DrawingManager | null>(null);
@@ -61,6 +66,49 @@ export function GoogleMaps({
   useEffect(() => {
     onMapLoadRef.current = onMapLoad;
   }, [onMapLoad]);
+
+  // Get user's current location on component mount
+  useEffect(() => {
+    if (!center) {
+      // Only try to get location if no center is provided
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userPos = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            setUserLocation(userPos);
+            setMapCenter(userPos);
+            setMapZoom(15); // Zoom in closer when user location is found
+            setLocationError(null);
+          },
+          (error) => {
+            console.warn('Geolocation error:', error.message);
+            setLocationError(error.message);
+            // Fall back to Patrick County, Virginia
+            setMapCenter(PATRICK_COUNTY_CENTER);
+            setMapZoom(12);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+          }
+        );
+      } else {
+        console.warn('Geolocation not supported by browser');
+        setLocationError('Geolocation not supported');
+        // Fall back to Patrick County, Virginia
+        setMapCenter(PATRICK_COUNTY_CENTER);
+        setMapZoom(12);
+      }
+    } else {
+      // Use provided center
+      setMapCenter(center);
+      setMapZoom(zoom || 12);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize Google Maps
   useEffect(() => {
@@ -133,10 +181,10 @@ export function GoogleMaps({
 
         console.log('Initializing map with ref and Google Maps API ready');
 
-        // Initialize map
+        // Initialize map with user location or Patrick County default
         const mapInstance = new google.maps.Map(mapRef.current, {
-          center,
-          zoom,
+          center: mapCenter,
+          zoom: mapZoom,
           mapTypeId: 'hybrid', // Hybrid satellite/road view
           mapTypeControl: true,
           mapTypeControlOptions: {
@@ -152,9 +200,26 @@ export function GoogleMaps({
 
         setMap(mapInstance);
 
+        // Add user location marker if available
+        if (userLocation) {
+          new google.maps.Marker({
+            position: userLocation,
+            map: mapInstance,
+            title: 'Your Location',
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: '#4285F4',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 3,
+            },
+          });
+        }
+
         // Notify parent component of map load (only once)
-        const mapCenter = new google.maps.LatLng(center.lat, center.lng);
-        onMapLoadRef.current?.(mapInstance, mapCenter);
+        const centerLatLng = new google.maps.LatLng(mapCenter.lat, mapCenter.lng);
+        onMapLoadRef.current?.(mapInstance, centerLatLng);
 
         // Initialize drawing manager for measuring
         if (enableMeasuring) {
@@ -258,24 +323,19 @@ export function GoogleMaps({
       }
     };
 
-    // Only initialize map once on mount
-    if (!map) {
+    // Only initialize map once, but wait for mapCenter to be set
+    if (!map && mapCenter) {
       initMap();
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map, mapCenter, mapZoom, userLocation]); // eslint-disable-line react-hooks/exhaustive-deps
   
-  // Update map center and zoom when props change
+  // Update map center and zoom when they change (e.g., when user location is found)
   useEffect(() => {
-    if (map && center) {
-      map.setCenter(center);
+    if (map && mapCenter) {
+      map.setCenter(mapCenter);
+      map.setZoom(mapZoom);
     }
-  }, [map, center]);
-  
-  useEffect(() => {
-    if (map && zoom) {
-      map.setZoom(zoom);
-    }
-  }, [map, zoom]);
+  }, [map, mapCenter, mapZoom]);
 
   // Update markers when they change
   useEffect(() => {
@@ -426,6 +486,47 @@ export function GoogleMaps({
           </div>
         </div>
       </div>
+
+      {/* Location status indicator */}
+      {!center && (
+        <div className="absolute top-20 left-4 bg-white/95 backdrop-blur-sm p-2 rounded-lg shadow-lg z-50 text-xs">
+          {userLocation ? (
+            <div className="flex items-center gap-2 text-green-600">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <span>Using your location</span>
+            </div>
+          ) : locationError ? (
+            <div className="text-amber-600">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                <span>Patrick County, VA (Default)</span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-gray-600">
+              <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
+              <span>Getting location...</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Re-center button (if user location available) */}
+      {userLocation && map && (
+        <button
+          onClick={() => {
+            map.setCenter(userLocation);
+            map.setZoom(15);
+          }}
+          className="absolute top-20 right-4 bg-white hover:bg-gray-50 p-2 rounded-lg shadow-lg z-50 transition-colors"
+          title="Center on your location"
+        >
+          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
