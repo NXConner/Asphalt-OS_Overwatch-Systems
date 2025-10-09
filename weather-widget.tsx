@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Cloud, CloudRain, CloudSnow, Sun, CloudDrizzle, Wind } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { apiPost } from '@/lib/api-client';
 
 interface WeatherData {
   temp: number;
@@ -27,6 +28,7 @@ export function WeatherWidget({ lat, lon, location, className }: WeatherWidgetPr
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [recommendation, setRecommendation] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -65,6 +67,27 @@ export function WeatherWidget({ lat, lon, location, className }: WeatherWidgetPr
           location: data.name,
         });
         setError(null);
+
+        // Ask server for scheduling recommendation using a simple single-point forecast window
+        try {
+          const now = new Date();
+          const forecast = Array.from({ length: 6 }).map((_, i) => ({
+            time: new Date(now.getTime() + i * 60 * 60 * 1000).toISOString(),
+            precipitationIn: data.rain?.['1h'] ? Number(data.rain['1h']) : 0,
+            tempF: data.main.temp,
+            windMph: data.wind.speed,
+          }));
+          const res = await apiPost('/api/weather/recommendation', { forecast });
+          if (res?.window?.start && res?.window?.end) {
+            const start = new Date(res.window.start);
+            const end = new Date(res.window.end);
+            setRecommendation(`Suggested: ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+          } else {
+            setRecommendation('No suitable window in next 6h');
+          }
+        } catch (_) {
+          setRecommendation(null);
+        }
       } catch (err) {
         setError('Unable to load weather data');
         console.error('Weather fetch error:', err);
@@ -179,6 +202,9 @@ export function WeatherWidget({ lat, lon, location, className }: WeatherWidgetPr
         <div className="pt-2 border-t">
           <p className="text-xs font-medium mb-1">Work Conditions:</p>
           <p className="text-xs text-muted-foreground">{workCondition.recommendation}</p>
+          {recommendation && (
+            <p className="text-xs text-muted-foreground mt-1">{recommendation}</p>
+          )}
         </div>
       </CardContent>
     </Card>
