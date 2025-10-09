@@ -6,7 +6,10 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar';
-import { TrainingManagement } from '@/components/training/training-management';
+// import { TrainingManagement } from '@/components/training/training-management';
+import { MaterialCalculator } from '@/components/tools/material-calculator';
+import { EmailSender } from '@/components/tools/email-sender';
+import { CheckoutButton } from '@/components/payments/checkout-button';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -65,7 +68,21 @@ export default function TrainingPage() {
               </Button>
             </div>
             
-            <TrainingManagement />
+            <div className="grid md:grid-cols-2 gap-6">
+              <MaterialCalculator />
+              <div className="space-y-6">
+                <EmailSender />
+                <div className="p-4 border rounded-lg bg-card">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold">Test Payment Intent</h3>
+                      <p className="text-sm text-muted-foreground">Creates a Stripe PaymentIntent (test keys required).</p>
+                    </div>
+                    <CheckoutButton amountCents={5000} />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </main>
       </div>
