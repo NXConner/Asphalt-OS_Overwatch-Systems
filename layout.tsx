@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
+import HUD from '@/components/game/HUD';
 import { PWAInstaller } from '@/components/pwa-installer';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -64,6 +65,7 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased`}>
         <Providers>
           <PWAInstaller />
+          <HUD />
           {children}
         </Providers>
       </body>

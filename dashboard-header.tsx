@@ -28,6 +28,7 @@ import {
   Palette,
 } from 'lucide-react';
 import { GlitchWrapper } from '@/components/ui/glitch-wrapper';
+import GameModeToggle from '@/components/game/GameModeToggle';
 import { useRouter } from 'next/navigation';
 
 interface DashboardHeaderProps {
@@ -139,6 +140,8 @@ export function DashboardHeader({
 
         {/* Right section */}
         <div className="flex items-center gap-3">
+          {/* Game Mode Toggle */}
+          <GameModeToggle />
           {/* Theme Customizer Button */}
           <Button
             variant="ghost"
