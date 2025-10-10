@@ -88,10 +88,10 @@
 
 @keyframes radarSweep {
   0% {
-    transform: translate(-50%, -50%) rotate(0deg);
+    transform: rotate(0deg);
   }
   100% {
-    transform: translate(-50%, -50%) rotate(360deg);
+    transform: rotate(360deg);
   }
 }
 
@@ -182,10 +182,8 @@
 
 .radar-sweep {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 200%;
-  height: 200%;
+  width: 100%;
+  height: 100%;
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 1;
@@ -199,10 +197,10 @@
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 0 0 0 800px;
+  border-width: 0 0 0 1200px;
   border-color: transparent transparent transparent transparent;
   border-left-color: rgba(59, 130, 246, 0.15);
-  transform-origin: right center;
+  transform-origin: 100% 50%;
   animation: radarSweep 15s linear infinite;
   filter: blur(2px);
   /* Create the cone fade effect with gradient */
@@ -221,7 +219,7 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 800px;
+  width: 1200px;
   height: 2px;
   background: linear-gradient(
     to left,
@@ -229,7 +227,7 @@
     rgba(59, 130, 246, 0.3) 50%,
     transparent
   );
-  transform-origin: right center;
+  transform-origin: 100% 50%;
   animation: radarSweep 15s linear infinite;
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
 }
@@ -588,11 +586,11 @@ a:active,
   }
   
   .radar-sweep::before {
-    border-width: 0 0 0 400px;
+    border-width: 0 0 0 600px;
   }
   
   .radar-sweep::after {
-    width: 400px;
+    width: 600px;
   }
 
   /* Mobile-specific optimizations */

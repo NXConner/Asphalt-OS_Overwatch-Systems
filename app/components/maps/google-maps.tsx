@@ -50,6 +50,7 @@ export function GoogleMaps({
   const [mapZoom, setMapZoom] = useState<number>(zoom || 12);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locatingUser, setLocatingUser] = useState(false);
+  const [radarSweepPosition, setRadarSweepPosition] = useState({ x: 50, y: 50 }); // Percentage position
 
   // Drawing manager for measuring areas
   const [drawingManager, setDrawingManager] = useState<google.maps.drawing.DrawingManager | null>(null);
@@ -158,6 +159,52 @@ export function GoogleMaps({
       setLocatingUser(false);
     }
   };
+
+  // Update radar sweep position to follow GPS/map center
+  useEffect(() => {
+    if (!map || !mapRef.current) return;
+
+    const updateRadarPosition = () => {
+      const center = map.getCenter();
+      if (!center) return;
+
+      const projection = map.getProjection();
+      if (!projection) return;
+
+      // Get the map container dimensions
+      const mapDiv = mapRef.current;
+      if (!mapDiv) return;
+      
+      const bounds = map.getBounds();
+      if (!bounds) return;
+
+      // Convert lat/lng to pixel position
+      const scale = Math.pow(2, map.getZoom() || 12);
+      const worldCoordinate = projection.fromLatLngToPoint(center);
+      
+      if (!worldCoordinate) return;
+
+      const mapBounds = mapDiv.getBoundingClientRect();
+      
+      // The center is always at 50% since we want the radar sweep to follow the map center
+      // This ensures the radar sweep stays centered on the rain radar circle
+      setRadarSweepPosition({ x: 50, y: 50 });
+    };
+
+    // Update position on various map events
+    const listeners = [
+      google.maps.event.addListener(map, 'center_changed', updateRadarPosition),
+      google.maps.event.addListener(map, 'zoom_changed', updateRadarPosition),
+      google.maps.event.addListener(map, 'bounds_changed', updateRadarPosition),
+    ];
+
+    // Initial position update
+    updateRadarPosition();
+
+    return () => {
+      listeners.forEach(listener => google.maps.event.removeListener(listener));
+    };
+  }, [map]);
 
   // Initialize Google Maps
   useEffect(() => {
@@ -499,9 +546,15 @@ export function GoogleMaps({
         </div>
       )}
 
-      {/* Radar Sweep Effect */}
+      {/* Radar Sweep Effect - Centered on GPS location (map center) */}
       {map && (
-        <div className="radar-sweep pointer-events-none" />
+        <div 
+          className="radar-sweep pointer-events-none" 
+          style={{
+            left: `${radarSweepPosition.x}%`,
+            top: `${radarSweepPosition.y}%`,
+          }}
+        />
       )}
 
       {/* Measurement Tools */}
