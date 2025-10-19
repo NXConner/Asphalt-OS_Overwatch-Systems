@@ -1,16 +1,14 @@
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
+import { withSecurity } from '@/lib/security-middleware';
+import { rateLimiters } from '@/lib/rate-limiter';
+import { createClientSchema, updateClientSchema } from '@/lib/validations/client.validation';
 
 // GET all clients
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+export const GET = withSecurity(
+  async (request: Request) => {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const isActive = searchParams.get('isActive');
@@ -47,20 +45,16 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(clients);
-  } catch (error: any) {
-    console.error('Error fetching clients:', error);
-    return NextResponse.json({ error: 'Failed to fetch clients', details: error.message }, { status: 500 });
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.general,
   }
-}
+);
 
 // POST create new client
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+export const POST = withSecurity(
+  async (request: Request) => {
     const body = await request.json();
 
     const client = await prisma.client.create({
@@ -84,9 +78,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(client);
-  } catch (error: any) {
-    console.error('Error creating client:', error);
-    return NextResponse.json({ error: 'Failed to create client', details: error.message }, { status: 500 });
+    return NextResponse.json(client, { status: 201 });
+  },
+  {
+    requireAuth: true,
+    allowedRoles: ['admin', 'manager'],
+    rateLimit: rateLimiters.general,
   }
-}
+);

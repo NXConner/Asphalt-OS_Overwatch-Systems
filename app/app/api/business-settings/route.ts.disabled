@@ -1,0 +1,57 @@
+
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { withSecurity } from '@/lib/security-middleware';
+import { rateLimiters } from '@/lib/rate-limiter';
+
+export const dynamic = "force-dynamic";
+
+export const GET = withSecurity(
+  async () => {
+    const settings = await prisma.businessSetting.findFirst({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return NextResponse.json(settings || {});
+  },
+  {
+    requireAuth: true,
+    allowedRoles: ['admin', 'manager'],
+    rateLimit: rateLimiters.general,
+  }
+);
+
+export const PUT = withSecurity(
+  async (request: Request) => {
+    const data = await request.json();
+
+    // Delete all existing settings and create new one (simpler than update)
+    await prisma.businessSetting.deleteMany();
+
+    const settings = await prisma.businessSetting.create({
+      data: {
+        businessName: data.businessName,
+        businessAddress: data.businessAddress,
+        businessPhone: data.businessPhone,
+        businessEmail: data.businessEmail,
+        taxRate: data.taxRate || 0,
+        defaultLaborRate: data.defaultLaborRate || 0,
+        defaultOverheadRate: data.defaultOverheadRate || 0,
+        defaultProfitMargin: data.defaultProfitMargin || 0,
+        payrollSchedule: data.payrollSchedule || 'weekly',
+        fiscalYearStart: data.fiscalYearStart ? new Date(data.fiscalYearStart) : new Date(),
+      },
+    });
+
+    return NextResponse.json(settings);
+  },
+  {
+    requireAuth: true,
+    allowedRoles: ['admin'],
+    rateLimit: rateLimiters.strict,
+  }
+);

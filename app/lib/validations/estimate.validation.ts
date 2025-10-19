@@ -29,3 +29,6 @@ export type EstimateInput = z.infer<typeof estimateSchema>;
 export type EstimateLineItemInput = z.infer<typeof estimateLineItemSchema>;
 export type EstimateUpdate = z.infer<typeof estimateUpdateSchema>;
 
+// Aliases for security middleware
+export const createEstimateSchema = estimateSchema;
+

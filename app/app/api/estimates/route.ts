@@ -4,16 +4,53 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { calculateEstimate } from '@/lib/business-logic';
+import { withSecurity } from '@/lib/security-middleware';
+import { rateLimiters } from '@/lib/rate-limiter';
+import { createEstimateSchema } from '@/lib/validations/estimate.validation';
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+export const GET = withSecurity(
+  async (request: Request) => {
+    const { searchParams } = new URL(request.url);
+    const jobId = searchParams.get('jobId');
 
+    const where: any = {};
+    if (jobId) where.jobId = jobId;
+
+    const estimates = await prisma.estimate.findMany({
+      where,
+      include: {
+        job: {
+          select: {
+            title: true,
+            address: true,
+          },
+        },
+        creator: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return NextResponse.json(estimates);
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.general,
+  }
+);
+
+export const POST = withSecurity(
+  async (request: Request) => {
+    const session = await getServerSession(authOptions);
     const input = await request.json();
     
     // Calculate the estimate using business logic
@@ -49,109 +86,17 @@ export async function POST(request: Request) {
         overhead: estimateResult.overhead,
         profit: estimateResult.profit,
         totalCost: estimateResult.total,
-        createdBy: session.user.id,
+        createdBy: session!.user!.id,
         validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
       }
     });
 
-    // Create estimate materials
-    for (const material of estimateResult.materials) {
-      // Find or create material in database
-      let dbMaterial = await prisma.material.findFirst({
-        where: { name: material.name }
-      });
-
-      if (!dbMaterial) {
-        dbMaterial = await prisma.material.create({
-          data: {
-            name: material.name,
-            unit: material.unit,
-            costPerUnit: material.unitCost,
-            supplier: 'SealMaster, Madison, NC',
-            category: 'OTHER'
-          }
-        });
-      }
-
-      await prisma.estimateMaterial.create({
-        data: {
-          estimateId: estimate.id,
-          materialId: dbMaterial.id,
-          quantity: material.quantity,
-          unitCost: material.unitCost,
-          totalCost: material.totalCost
-        }
-      });
-    }
-
-    // Return estimate with full details
-    const fullEstimate = await prisma.estimate.findUnique({
-      where: { id: estimate.id },
-      include: {
-        materials: {
-          include: {
-            material: true
-          }
-        },
-        job: true,
-        creator: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true
-          }
-        }
-      }
-    });
-
-    return NextResponse.json({
-      ...fullEstimate,
-      calculatedMaterials: estimateResult.materials,
-      breakdown: estimateResult
-    }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating estimate:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ estimate, breakdown: estimateResult }, { status: 201 });
+  },
+  {
+    requireAuth: true,
+    allowedRoles: ['admin', 'manager'],
+    validationSchema: createEstimateSchema,
+    rateLimit: rateLimiters.general,
   }
-}
-
-export async function GET() {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const estimates = await prisma.estimate.findMany({
-      include: {
-        job: true,
-        creator: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true
-          }
-        },
-        materials: {
-          include: {
-            material: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    return NextResponse.json(estimates);
-  } catch (error) {
-    console.error('Error fetching estimates:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
+);

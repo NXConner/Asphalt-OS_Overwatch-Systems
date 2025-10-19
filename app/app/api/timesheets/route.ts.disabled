@@ -1,0 +1,138 @@
+
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { withSecurity } from '@/lib/security-middleware';
+import { rateLimiters } from '@/lib/rate-limiter';
+import { createTimesheetSchema, updateTimesheetSchema } from '@/lib/validations/timesheet.validation';
+
+export const dynamic = "force-dynamic";
+
+export const GET = withSecurity(
+  async (request: Request) => {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    const jobId = searchParams.get('jobId');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+
+    const where: any = {};
+    
+    if (userId) where.userId = userId;
+    if (jobId) where.jobId = jobId;
+    
+    if (startDate && endDate) {
+      where.clockIn = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      };
+    }
+
+    const timesheets = await prisma.timesheet.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        job: {
+          select: {
+            title: true,
+            address: true,
+          },
+        },
+      },
+      orderBy: {
+        clockIn: 'desc',
+      },
+    });
+
+    return NextResponse.json(timesheets);
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.general,
+  }
+);
+
+export const POST = withSecurity(
+  async (request: Request) => {
+    const data = await request.json();
+    
+    const timesheet = await prisma.timesheet.create({
+      data: {
+        userId: data.userId,
+        jobId: data.jobId,
+        clockIn: new Date(data.clockIn),
+        clockOut: data.clockOut ? new Date(data.clockOut) : null,
+        breakMinutes: data.breakMinutes || 0,
+        notes: data.notes,
+        location: data.location,
+      },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        job: {
+          select: {
+            title: true,
+            address: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(timesheet, { status: 201 });
+  },
+  {
+    requireAuth: true,
+    validationSchema: createTimesheetSchema,
+    rateLimit: rateLimiters.general,
+  }
+);
+
+export const PUT = withSecurity(
+  async (request: Request) => {
+    const data = await request.json();
+    const { id, ...updateData } = data;
+
+    const timesheet = await prisma.timesheet.update({
+      where: { id },
+      data: {
+        ...updateData,
+        clockIn: updateData.clockIn ? new Date(updateData.clockIn) : undefined,
+        clockOut: updateData.clockOut ? new Date(updateData.clockOut) : undefined,
+      },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        job: {
+          select: {
+            title: true,
+            address: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(timesheet);
+  },
+  {
+    requireAuth: true,
+    validationSchema: updateTimesheetSchema,
+    rateLimit: rateLimiters.general,
+  }
+);

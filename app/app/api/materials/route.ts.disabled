@@ -1,0 +1,53 @@
+
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { withSecurity } from '@/lib/security-middleware';
+import { rateLimiters } from '@/lib/rate-limiter';
+import { createMaterialSchema, updateMaterialSchema } from '@/lib/validations/material.validation';
+
+export const dynamic = "force-dynamic";
+
+export const GET = withSecurity(
+  async () => {
+    const materials = await prisma.material.findMany({
+      orderBy: {
+        category: 'asc'
+      }
+    });
+
+    return NextResponse.json(materials);
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.general,
+  }
+);
+
+export const POST = withSecurity(
+  async (request: Request) => {
+    const data = await request.json();
+    
+    const material = await prisma.material.create({
+      data: {
+        name: data.name,
+        category: data.category,
+        unit: data.unit,
+        cost: data.cost,
+        supplier: data.supplier,
+        description: data.description,
+        quantityInStock: data.quantityInStock || 0,
+        reorderLevel: data.reorderLevel || 0,
+      }
+    });
+
+    return NextResponse.json(material, { status: 201 });
+  },
+  {
+    requireAuth: true,
+    allowedRoles: ['admin', 'manager'],
+    validationSchema: createMaterialSchema,
+    rateLimit: rateLimiters.general,
+  }
+);

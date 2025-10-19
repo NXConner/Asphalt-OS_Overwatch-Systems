@@ -40,3 +40,7 @@ export type InvoiceLineItemInput = z.infer<typeof invoiceLineItemSchema>;
 export type InvoiceUpdate = z.infer<typeof invoiceUpdateSchema>;
 export type InvoiceQuery = z.infer<typeof invoiceQuerySchema>;
 
+// Aliases for security middleware
+export const createInvoiceSchema = invoiceSchema;
+export const updateInvoiceSchema = invoiceUpdateSchema;
+

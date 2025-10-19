@@ -1,82 +1,83 @@
-export const dynamic = 'force-dynamic';
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { withSecurity } from '@/lib/security-middleware';
+import { rateLimiters } from '@/lib/rate-limiter';
 
-export async function GET(req: NextRequest) {
-  try {
+export const dynamic = "force-dynamic";
+
+export const GET = withSecurity(
+  async () => {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    
+    const profile = await prisma.user.findUnique({
+      where: { id: session!.user!.id },
       select: {
         id: true,
         email: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         phone: true,
+        role: true,
         address: true,
         bio: true,
-        role: true,
+        hireDate: true,
+        isVeteran: true,
+        veteranBranch: true,
+        veteranServiceYears: true,
+        image: true,
+        hourlyRate: true,
         createdAt: true,
       },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    return NextResponse.json(user);
-  } catch (error) {
-    console.error('Profile fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch profile' },
-      { status: 500 }
-    );
+    return NextResponse.json(profile);
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.general,
   }
-}
+);
 
-export async function PUT(req: NextRequest) {
-  try {
+export const PUT = withSecurity(
+  async (request: Request) => {
     const session = await getServerSession(authOptions);
+    const data = await request.json();
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await req.json();
-    const { name, phone, address, bio } = body;
-
-    const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
+    const profile = await prisma.user.update({
+      where: { id: session!.user!.id },
       data: {
-        name: name || undefined,
-        phone: phone || undefined,
-        address: address || undefined,
-        bio: bio || undefined,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        address: data.address,
+        bio: data.bio,
+        isVeteran: data.isVeteran,
       },
       select: {
         id: true,
         email: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         phone: true,
+        role: true,
         address: true,
         bio: true,
-        role: true,
+        hireDate: true,
+        isVeteran: true,
+        veteranBranch: true,
+        veteranServiceYears: true,
+        image: true,
+        hourlyRate: true,
       },
     });
 
-    return NextResponse.json(updatedUser);
-  } catch (error) {
-    console.error('Profile update error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update profile' },
-      { status: 500 }
-    );
+    return NextResponse.json(profile);
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.general,
   }
-}
+);

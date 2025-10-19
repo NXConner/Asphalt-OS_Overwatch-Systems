@@ -1,0 +1,73 @@
+
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { withSecurity } from '@/lib/security-middleware';
+import { rateLimiters } from '@/lib/rate-limiter';
+import { createMeasurementSchema, updateMeasurementSchema } from '@/lib/validations/measurement.validation';
+
+export const dynamic = "force-dynamic";
+
+export const GET = withSecurity(
+  async (request: Request) => {
+    const { searchParams } = new URL(request.url);
+    const jobId = searchParams.get('jobId');
+
+    const where: any = {};
+    if (jobId) where.jobId = jobId;
+
+    const measurements = await prisma.measurement.findMany({
+      where,
+      include: {
+        job: {
+          select: {
+            title: true,
+            address: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return NextResponse.json(measurements);
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.general,
+  }
+);
+
+export const POST = withSecurity(
+  async (request: Request) => {
+    const data = await request.json();
+    
+    const measurement = await prisma.measurement.create({
+      data: {
+        jobId: data.jobId,
+        type: data.type,
+        value: data.value,
+        unit: data.unit,
+        coordinates: data.coordinates,
+        notes: data.notes,
+      },
+      include: {
+        job: {
+          select: {
+            title: true,
+            address: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(measurement, { status: 201 });
+  },
+  {
+    requireAuth: true,
+    validationSchema: createMeasurementSchema,
+    rateLimit: rateLimiters.general,
+  }
+);

@@ -3,14 +3,12 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
 import { authOptions } from '@/lib/auth';
+import { withSecurity } from '@/lib/security-middleware';
+import { rateLimiters } from '@/lib/rate-limiter';
+import { createInvoiceSchema, updateInvoiceSchema } from '@/lib/validations/invoice.validation';
 
-export async function GET(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+export const GET = withSecurity(
+  async (request: Request) => {
     const { searchParams } = new URL(request.url);
     const jobId = searchParams.get('jobId');
     const clientId = searchParams.get('clientId');
@@ -35,19 +33,15 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json(invoices);
-  } catch (error) {
-    console.error('Error fetching invoices:', error);
-    return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 });
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.general,
   }
-}
+);
 
-export async function POST(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+export const POST = withSecurity(
+  async (request: Request) => {
     const data = await request.json();
 
     // Generate invoice number
@@ -91,20 +85,18 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(invoice);
-  } catch (error) {
-    console.error('Error creating invoice:', error);
-    return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 });
+    return NextResponse.json(invoice, { status: 201 });
+  },
+  {
+    requireAuth: true,
+    allowedRoles: ['admin', 'manager'],
+    validationSchema: createInvoiceSchema,
+    rateLimit: rateLimiters.general,
   }
-}
+);
 
-export async function PUT(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+export const PUT = withSecurity(
+  async (request: Request) => {
     const data = await request.json();
     const { id, items, ...invoiceData } = data;
 
@@ -134,19 +126,17 @@ export async function PUT(request: Request) {
     });
 
     return NextResponse.json(invoice);
-  } catch (error) {
-    console.error('Error updating invoice:', error);
-    return NextResponse.json({ error: 'Failed to update invoice' }, { status: 500 });
+  },
+  {
+    requireAuth: true,
+    allowedRoles: ['admin', 'manager'],
+    validationSchema: updateInvoiceSchema,
+    rateLimit: rateLimiters.general,
   }
-}
+);
 
-export async function DELETE(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+export const DELETE = withSecurity(
+  async (request: Request) => {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -159,8 +149,11 @@ export async function DELETE(request: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting invoice:', error);
-    return NextResponse.json({ error: 'Failed to delete invoice' }, { status: 500 });
+  },
+  {
+    requireAuth: true,
+    allowedRoles: ['admin'],
+    rateLimit: rateLimiters.strict,
   }
-}
+);
+

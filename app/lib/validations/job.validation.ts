@@ -38,3 +38,7 @@ export type JobInput = z.infer<typeof jobSchema>;
 export type JobUpdate = z.infer<typeof jobUpdateSchema>;
 export type JobQuery = z.infer<typeof jobQuerySchema>;
 
+// Aliases for security middleware
+export const createJobSchema = jobSchema;
+export const updateJobSchema = jobUpdateSchema;
+

@@ -1,0 +1,126 @@
+
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { withSecurity } from '@/lib/security-middleware';
+import { rateLimiters } from '@/lib/rate-limiter';
+import { uploadFile } from '@/lib/s3';
+
+export const dynamic = "force-dynamic";
+
+export const GET = withSecurity(
+  async (request: Request) => {
+    const { searchParams } = new URL(request.url);
+    const jobId = searchParams.get('jobId');
+    const category = searchParams.get('category');
+
+    const where: any = {};
+    if (jobId) where.jobId = jobId;
+    if (category) where.category = category;
+
+    const photos = await prisma.photo.findMany({
+      where,
+      include: {
+        job: {
+          select: {
+            title: true,
+            address: true,
+          },
+        },
+        uploadedBy: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return NextResponse.json(photos);
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.general,
+  }
+);
+
+export const POST = withSecurity(
+  async (request: Request) => {
+    const session = await getServerSession(authOptions);
+    const formData = await request.formData();
+    
+    const jobId = formData.get('jobId') as string;
+    const caption = formData.get('caption') as string || null;
+    const category = (formData.get('category') as string) || 'other';
+    const locationStr = formData.get('location') as string;
+    const location = locationStr ? JSON.parse(locationStr) : null;
+    
+    const file = formData.get('file') as File;
+    
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+
+    // Upload to S3
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const fileName = `photos/${Date.now()}-${file.name}`;
+    const cloudStoragePath = await uploadFile(buffer, fileName);
+    
+    const photo = await prisma.photo.create({
+      data: {
+        jobId,
+        cloudStoragePath,
+        caption,
+        category,
+        location,
+        uploadedById: session!.user!.id,
+      },
+      include: {
+        job: {
+          select: {
+            title: true,
+            address: true,
+          },
+        },
+        uploadedBy: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(photo, { status: 201 });
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.upload,
+  }
+);
+
+export const DELETE = withSecurity(
+  async (request: Request) => {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Photo ID required' }, { status: 400 });
+    }
+
+    await prisma.photo.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  },
+  {
+    requireAuth: true,
+    allowedRoles: ['admin', 'manager'],
+    rateLimit: rateLimiters.strict,
+  }
+);

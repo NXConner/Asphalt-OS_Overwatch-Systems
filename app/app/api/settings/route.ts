@@ -1,95 +1,76 @@
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { withSecurity } from '@/lib/security-middleware';
+import { rateLimiters } from '@/lib/rate-limiter';
 
-export async function GET(req: NextRequest) {
-  try {
+export const dynamic = "force-dynamic";
+
+export const GET = withSecurity(
+  async () => {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Get user settings
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    
+    const settings = await prisma.user.findUnique({
+      where: { id: session!.user!.id },
       select: {
-        id: true,
         email: true,
-        name: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        address: true,
+        bio: true,
+        isVeteran: true,
+        veteranBranch: true,
+        veteranServiceYears: true,
+        image: true,
+        hourlyRate: true,
+        role: true,
       },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Get app settings
-    const appSettings = await prisma.appSettings.findFirst({
-      where: { userId: user.id },
-    });
-
-    return NextResponse.json({
-      user,
-      settings: appSettings || {},
-    });
-  } catch (error) {
-    console.error('Error fetching settings:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch settings' },
-      { status: 500 }
-    );
+    return NextResponse.json(settings);
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.general,
   }
-}
+);
 
-export async function POST(req: NextRequest) {
-  try {
+export const PUT = withSecurity(
+  async (request: Request) => {
     const session = await getServerSession(authOptions);
+    const data = await request.json();
 
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await req.json();
-    const { mapSettings, notifications, display } = body;
-
-    // Get user
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Upsert app settings
-    const settings = await prisma.appSettings.upsert({
-      where: {
-        userId: user.id,
+    const updated = await prisma.user.update({
+      where: { id: session!.user!.id },
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        address: data.address,
+        bio: data.bio,
+        isVeteran: data.isVeteran,
       },
-      create: {
-        userId: user.id,
-        mapDefaultLat: mapSettings?.defaultLat,
-        mapDefaultLng: mapSettings?.defaultLng,
-        mapDefaultZoom: mapSettings?.defaultZoom,
-        mapType: mapSettings?.defaultMapType || 'hybrid',
-      },
-      update: {
-        mapDefaultLat: mapSettings?.defaultLat,
-        mapDefaultLng: mapSettings?.defaultLng,
-        mapDefaultZoom: mapSettings?.defaultZoom,
-        mapType: mapSettings?.defaultMapType || 'hybrid',
+      select: {
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        address: true,
+        bio: true,
+        isVeteran: true,
+        veteranBranch: true,
+        veteranServiceYears: true,
+        image: true,
       },
     });
 
-    return NextResponse.json({ success: true, settings });
-  } catch (error) {
-    console.error('Error saving settings:', error);
-    return NextResponse.json(
-      { error: 'Failed to save settings' },
-      { status: 500 }
-    );
+    return NextResponse.json(updated);
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.general,
   }
-}
+);

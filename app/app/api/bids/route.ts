@@ -3,14 +3,12 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
 import { authOptions } from '@/lib/auth';
+import { withSecurity } from '@/lib/security-middleware';
+import { rateLimiters } from '@/lib/rate-limiter';
+import { createBidSchema, updateBidSchema } from '@/lib/validations/bid.validation';
 
-export async function GET(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+export const GET = withSecurity(
+  async (request: Request) => {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
@@ -34,19 +32,16 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json(bids);
-  } catch (error) {
-    console.error('Error fetching bids:', error);
-    return NextResponse.json({ error: 'Failed to fetch bids' }, { status: 500 });
+  },
+  {
+    requireAuth: true,
+    rateLimit: rateLimiters.general,
   }
-}
+);
 
-export async function POST(request: Request) {
-  try {
+export const POST = withSecurity(
+  async (request: Request) => {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const data = await request.json();
 
     // Generate bid number
@@ -72,7 +67,7 @@ export async function POST(request: Request) {
         estimatedHours: data.estimatedHours,
         probability: data.probability || 0,
         notes: data.notes,
-        createdById: session.user.id,
+        createdById: session!.user!.id,
       },
       include: {
         client: true,
@@ -85,20 +80,17 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(bid);
-  } catch (error) {
-    console.error('Error creating bid:', error);
-    return NextResponse.json({ error: 'Failed to create bid' }, { status: 500 });
+    return NextResponse.json(bid, { status: 201 });
+  },
+  {
+    requireAuth: true,
+    allowedRoles: ['admin', 'manager'],
+    rateLimit: rateLimiters.general,
   }
-}
+);
 
-export async function PUT(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+export const PUT = withSecurity(
+  async (request: Request) => {
     const data = await request.json();
     const { id, ...bidData } = data;
 
@@ -121,19 +113,16 @@ export async function PUT(request: Request) {
     });
 
     return NextResponse.json(bid);
-  } catch (error) {
-    console.error('Error updating bid:', error);
-    return NextResponse.json({ error: 'Failed to update bid' }, { status: 500 });
+  },
+  {
+    requireAuth: true,
+    allowedRoles: ['admin', 'manager'],
+    rateLimit: rateLimiters.general,
   }
-}
+);
 
-export async function DELETE(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+export const DELETE = withSecurity(
+  async (request: Request) => {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -146,8 +135,10 @@ export async function DELETE(request: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting bid:', error);
-    return NextResponse.json({ error: 'Failed to delete bid' }, { status: 500 });
+  },
+  {
+    requireAuth: true,
+    allowedRoles: ['admin', 'manager'],
+    rateLimit: rateLimiters.strict,
   }
-}
+);
