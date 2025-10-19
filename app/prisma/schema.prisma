@@ -124,6 +124,7 @@ enum Role {
   ADMIN
   OWNER
   EMPLOYEE
+  CLIENT
 }
 
 enum JobStatus {
