@@ -32,6 +32,7 @@ import { useRouter } from 'next/navigation';
 import { useGlassEffects } from '@/hooks/use-glass-effects';
 import { getGlassEffectStyles } from '@/lib/glass-effects';
 import { cn } from '@/lib/utils';
+import { GameModeToggle } from '@/components/game/game-mode-toggle';
 
 interface DashboardHeaderProps {
   onTimesheetClick?: () => void;
@@ -154,6 +155,9 @@ export function DashboardHeader({
 
         {/* Right section */}
         <div className="flex items-center gap-3">
+          {/* Game Mode Toggle */}
+          <GameModeToggle />
+
           {/* Theme Customizer Button */}
           <Button
             variant="ghost"

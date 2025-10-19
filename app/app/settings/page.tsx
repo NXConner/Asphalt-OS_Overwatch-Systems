@@ -1,353 +1,398 @@
 
-
 'use client';
 
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { Loader2, Save, ArrowLeft, DollarSign, Settings, Wrench, Percent, Map, Sparkles } from 'lucide-react';
-
-interface BusinessSetting {
-  id: string;
-  key: string;
-  value: string;
-  label: string;
-  category: string;
-  unit?: string;
-  dataType: string;
-}
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Settings, Map, Bell, Palette, User, Shield } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export default function SettingsPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [settings, setSettings] = useState<BusinessSetting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [changes, setChanges] = useState<Record<string, string>>({});
-  const [mapType, setMapType] = useState<string>('hybrid');
+  const { data: session } = useSession() || {};
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/');
-    }
-  }, [status, router]);
+  // Map Settings
+  const [defaultLat, setDefaultLat] = useState('40.7128');
+  const [defaultLng, setDefaultLng] = useState('-74.0060');
+  const [defaultZoom, setDefaultZoom] = useState('12');
+  const [defaultMapType, setDefaultMapType] = useState('roadmap');
 
-  // Load saved map type from localStorage
-  useEffect(() => {
-    const savedMapType = localStorage.getItem('mapType');
-    if (savedMapType) {
-      setMapType(savedMapType);
-    }
-  }, []);
+  // Notification Settings
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [jobAlerts, setJobAlerts] = useState(true);
+  const [employeeAlerts, setEmployeeAlerts] = useState(true);
 
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      // Only ADMIN and OWNER can access settings
-      if (!['ADMIN', 'OWNER'].includes(session.user.role)) {
-        router.replace('/dashboard');
-        return;
-      }
-      fetchSettings();
-    }
-  }, [status, session, router]);
+  // Display Settings
+  const [darkMode, setDarkMode] = useState(true);
+  const [compactView, setCompactView] = useState(false);
+  const [showWeather, setShowWeather] = useState(true);
 
-  const fetchSettings = async () => {
+  const handleSaveSettings = async () => {
+    setLoading(true);
     try {
-      const response = await fetch('/api/business-settings');
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mapSettings: {
+            defaultLat: parseFloat(defaultLat),
+            defaultLng: parseFloat(defaultLng),
+            defaultZoom: parseInt(defaultZoom, 10),
+            defaultMapType,
+          },
+          notifications: {
+            email: emailNotifications,
+            push: pushNotifications,
+            jobAlerts,
+            employeeAlerts,
+          },
+          display: {
+            darkMode,
+            compactView,
+            showWeather,
+          },
+        }),
+      });
+
       if (response.ok) {
-        const data = await response.json();
-        setSettings(data);
+        toast.success('Settings saved successfully!');
       } else {
-        toast.error('Failed to load settings');
+        toast.error('Failed to save settings');
       }
     } catch (error) {
-      console.error('Error fetching settings:', error);
-      toast.error('Failed to load settings');
+      console.error('Error saving settings:', error);
+      toast.error('An error occurred while saving settings');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleValueChange = (key: string, value: string) => {
-    setChanges(prev => ({ ...prev, [key]: value }));
-  };
-
-  const getDisplayValue = (setting: BusinessSetting) => {
-    return changes[setting.key] !== undefined ? changes[setting.key] : setting.value;
-  };
-
-  const hasChanges = () => {
-    return Object.keys(changes).length > 0;
-  };
-
-  const handleSave = async () => {
-    if (!hasChanges()) return;
-
-    setSaving(true);
-    try {
-      const updates = Object.entries(changes).map(([key, value]) => ({ key, value }));
-      
-      const response = await fetch('/api/business-settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-
-      if (response.ok) {
-        toast.success('Settings updated successfully');
-        setChanges({});
-        await fetchSettings(); // Refresh data
-      } else {
-        toast.error('Failed to update settings');
-      }
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      toast.error('Failed to update settings');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleReset = () => {
-    setChanges({});
-  };
-
-  const handleMapTypeChange = (value: string) => {
-    setMapType(value);
-    localStorage.setItem('mapType', value);
-    toast.success('Map type updated', {
-      description: 'Refresh the map to see changes',
-    });
-  };
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'MATERIAL_COSTS': return <DollarSign className="w-4 h-4" />;
-      case 'LABOR_RATES': return <Settings className="w-4 h-4" />;
-      case 'EQUIPMENT_COSTS': return <Wrench className="w-4 h-4" />;
-      case 'BUSINESS_RATES': return <Percent className="w-4 h-4" />;
-      default: return <Settings className="w-4 h-4" />;
-    }
-  };
-
-  const getCategoryTitle = (category: string) => {
-    switch (category) {
-      case 'MATERIAL_COSTS': return 'Material Costs';
-      case 'LABOR_RATES': return 'Labor Rates & Efficiency';
-      case 'EQUIPMENT_COSTS': return 'Equipment & Fuel Costs';
-      case 'BUSINESS_RATES': return 'Business Rates';
-      case 'RATES': return 'Application Rates & Coverage';
-      default: return category.replace('_', ' ');
-    }
-  };
-
-  const groupedSettings = settings.reduce((groups, setting) => {
-    const category = setting.category;
-    if (!groups[category]) {
-      groups[category] = [];
-    }
-    groups[category].push(setting);
-    return groups;
-  }, {} as Record<string, BusinessSetting[]>);
-
-  if (status === 'loading' || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading settings...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (status === 'unauthenticated' || !session?.user || !['ADMIN', 'OWNER'].includes(session.user.role)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground">Access denied</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-muted/30">
-      <div className="container max-w-6xl mx-auto p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push('/dashboard')}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold">Business Settings</h1>
-              <p className="text-muted-foreground">
-                Configure material costs, labor rates, and business parameters
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {hasChanges() && (
-              <>
-                <Badge variant="secondary" className="px-3 py-1">
-                  {Object.keys(changes).length} unsaved change(s)
-                </Badge>
-                <Button variant="outline" onClick={handleReset} disabled={saving}>
-                  Reset
-                </Button>
-              </>
-            )}
-            <Button onClick={handleSave} disabled={!hasChanges() || saving}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              <Save className="w-4 h-4 mr-2" />
-              Save Changes
-            </Button>
-          </div>
-        </div>
+    <div className="container mx-auto py-8 px-4 max-w-5xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <Settings className="h-8 w-8" />
+          Settings
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          Configure your Asphalt OS preferences and defaults
+        </p>
+      </div>
 
-        {/* Settings Tabs */}
-        <Tabs defaultValue="MATERIAL_COSTS" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            {Object.keys(groupedSettings).map(category => (
-              <TabsTrigger key={category} value={category} className="flex items-center gap-2">
-                {getCategoryIcon(category)}
-                <span className="hidden sm:inline">{getCategoryTitle(category)}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {Object.entries(groupedSettings).map(([category, categorySettings]) => (
-            <TabsContent key={category} value={category} className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    {getCategoryIcon(category)}
-                    {getCategoryTitle(category)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {categorySettings.map((setting) => (
-                      <div key={setting.key} className="space-y-2">
-                        <Label htmlFor={setting.key} className="text-sm font-medium">
-                          {setting.label}
-                          {setting.unit && (
-                            <Badge variant="outline" className="ml-2 text-xs">
-                              {setting.unit}
-                            </Badge>
-                          )}
-                        </Label>
-                        <Input
-                          id={setting.key}
-                          type="number"
-                          step="0.01"
-                          value={getDisplayValue(setting)}
-                          onChange={(e) => handleValueChange(setting.key, e.target.value)}
-                          className={changes[setting.key] !== undefined ? 'border-orange-500' : ''}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
-        </Tabs>
-
-        <Separator className="my-8" />
+      <Tabs defaultValue="map" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="map" className="gap-2">
+            <Map className="h-4 w-4" />
+            <span className="hidden sm:inline">Map</span>
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-2">
+            <Bell className="h-4 w-4" />
+            <span className="hidden sm:inline">Notifications</span>
+          </TabsTrigger>
+          <TabsTrigger value="display" className="gap-2">
+            <Palette className="h-4 w-4" />
+            <span className="hidden sm:inline">Display</span>
+          </TabsTrigger>
+          <TabsTrigger value="profile" className="gap-2">
+            <User className="h-4 w-4" />
+            <span className="hidden sm:inline">Profile</span>
+          </TabsTrigger>
+          <TabsTrigger value="security" className="gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Security</span>
+          </TabsTrigger>
+        </TabsList>
 
         {/* Map Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Map className="w-4 h-4" />
-              Map Display Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+        <TabsContent value="map" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Default Map Configuration</CardTitle>
+              <CardDescription>
+                Set your default map location and preferences
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="defaultLat">Default Latitude</Label>
+                  <Input
+                    id="defaultLat"
+                    type="number"
+                    step="0.0001"
+                    value={defaultLat}
+                    onChange={(e) => setDefaultLat(e.target.value)}
+                    placeholder="40.7128"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="defaultLng">Default Longitude</Label>
+                  <Input
+                    id="defaultLng"
+                    type="number"
+                    step="0.0001"
+                    value={defaultLng}
+                    onChange={(e) => setDefaultLng(e.target.value)}
+                    placeholder="-74.0060"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="mapType" className="text-sm font-medium">
-                  Map View Type
-                  <Badge variant="outline" className="ml-2 text-xs">
-                    Display
-                  </Badge>
-                </Label>
-                <Select value={mapType} onValueChange={handleMapTypeChange}>
-                  <SelectTrigger id="mapType" className="w-full">
-                    <SelectValue placeholder="Select map type" />
+                <Label htmlFor="defaultZoom">Default Zoom Level</Label>
+                <Select value={defaultZoom} onValueChange={setDefaultZoom}>
+                  <SelectTrigger id="defaultZoom">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="roadmap">Roadmap (Standard)</SelectItem>
+                    <SelectItem value="10">10 - Wide Area</SelectItem>
+                    <SelectItem value="12">12 - City View</SelectItem>
+                    <SelectItem value="14">14 - Neighborhood</SelectItem>
+                    <SelectItem value="16">16 - Street Level</SelectItem>
+                    <SelectItem value="18">18 - Close Up</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mapType">Default Map Type</Label>
+                <Select value={defaultMapType} onValueChange={setDefaultMapType}>
+                  <SelectTrigger id="mapType">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="roadmap">Roadmap</SelectItem>
                     <SelectItem value="satellite">Satellite</SelectItem>
-                    <SelectItem value="hybrid">Hybrid (Satellite + Roads)</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
                     <SelectItem value="terrain">Terrain</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Choose how the map is displayed on the dashboard. Changes take effect immediately.
-                </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        <Separator className="my-8" />
+        {/* Notification Settings */}
+        <TabsContent value="notifications" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Notification Preferences</CardTitle>
+              <CardDescription>
+                Choose how you want to be notified
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="emailNotifications">Email Notifications</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receive notifications via email
+                  </p>
+                </div>
+                <Switch
+                  id="emailNotifications"
+                  checked={emailNotifications}
+                  onCheckedChange={setEmailNotifications}
+                />
+              </div>
 
-        {/* Glass Effects */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              Glass Morphism Effects
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Configure translucent glass effects for the topbar and sidebar with adjustable transparency, blur, and styles like frosty, smokey, steamy, or condensation.
-              </p>
-              <Button
-                variant="default"
-                onClick={() => router.push('/settings/glass-effects')}
-                className="w-full sm:w-auto"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Configure Glass Effects
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="pushNotifications">Push Notifications</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receive browser push notifications
+                  </p>
+                </div>
+                <Switch
+                  id="pushNotifications"
+                  checked={pushNotifications}
+                  onCheckedChange={setPushNotifications}
+                />
+              </div>
 
-        <Separator className="my-8" />
-        
-        {/* Footer Info */}
-        <div className="text-center text-sm text-muted-foreground">
-          <p>
-            Changes to these settings will immediately affect all new estimates and calculations.
-            <br />
-            Contact your system administrator if you need additional settings or have questions.
-          </p>
-        </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="jobAlerts">Job Alerts</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Get notified about job updates
+                  </p>
+                </div>
+                <Switch
+                  id="jobAlerts"
+                  checked={jobAlerts}
+                  onCheckedChange={setJobAlerts}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="employeeAlerts">Employee Alerts</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Get notified about employee activities
+                  </p>
+                </div>
+                <Switch
+                  id="employeeAlerts"
+                  checked={employeeAlerts}
+                  onCheckedChange={setEmployeeAlerts}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Display Settings */}
+        <TabsContent value="display" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Display Preferences</CardTitle>
+              <CardDescription>
+                Customize your interface appearance
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="darkMode">Dark Mode</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Use dark theme by default
+                  </p>
+                </div>
+                <Switch
+                  id="darkMode"
+                  checked={darkMode}
+                  onCheckedChange={setDarkMode}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="compactView">Compact View</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Use more compact interface elements
+                  </p>
+                </div>
+                <Switch
+                  id="compactView"
+                  checked={compactView}
+                  onCheckedChange={setCompactView}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="showWeather">Show Weather Widget</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Display weather information on dashboard
+                  </p>
+                </div>
+                <Switch
+                  id="showWeather"
+                  checked={showWeather}
+                  onCheckedChange={setShowWeather}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Profile Settings */}
+        <TabsContent value="profile" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile Information</CardTitle>
+              <CardDescription>
+                Manage your account details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  defaultValue={session?.user?.name || ''}
+                  placeholder="Enter your name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  defaultValue={session?.user?.email || ''}
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="Enter your phone number"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Security Settings */}
+        <TabsContent value="security" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Security Settings</CardTitle>
+              <CardDescription>
+                Manage your account security
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  placeholder="Enter current password"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  placeholder="Enter new password"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm new password"
+                />
+              </div>
+
+              <Button>Change Password</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Save Button */}
+      <div className="flex justify-end mt-6">
+        <Button onClick={handleSaveSettings} disabled={loading} size="lg">
+          {loading ? 'Saving...' : 'Save All Settings'}
+        </Button>
       </div>
     </div>
   );
 }
-

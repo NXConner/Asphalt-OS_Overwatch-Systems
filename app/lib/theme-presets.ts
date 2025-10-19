@@ -1,7 +1,9 @@
 
 /**
- * Theme Presets including Black Gold
+ * Theme Presets including Black Gold and Division Themes
  */
+
+import { DIVISION_THEMES } from './themes/division-themes';
 
 export interface ThemeColors {
   primary: string;
@@ -136,6 +138,8 @@ export const THEME_PRESETS: ThemePreset[] = [
     },
     category: 'STANDARD',
   },
+  // Add Division themes
+  ...DIVISION_THEMES,
 ];
 
 export function getThemesByCategory(category: string): ThemePreset[] {
