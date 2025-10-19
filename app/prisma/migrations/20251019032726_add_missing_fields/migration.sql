@@ -1,0 +1,19 @@
+-- Add missing veteran fields to User table
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isVeteran" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "veteranBranch" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "veteranServiceYears" INTEGER;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "veteranDischargeType" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "veteranDischargeDate" TIMESTAMP(3);
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "veteranDocuments" JSONB;
+
+-- Add missing clock in/out fields
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isCurrentlyClockedIn" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "currentClockInId" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastClockInTime" TIMESTAMP(3);
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastClockOutTime" TIMESTAMP(3);
+
+-- Add missing GPS tracking fields  
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "currentLatitude" DOUBLE PRECISION;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "currentLongitude" DOUBLE PRECISION;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastLocationUpdate" TIMESTAMP(3);
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "locationAccuracy" DOUBLE PRECISION;
