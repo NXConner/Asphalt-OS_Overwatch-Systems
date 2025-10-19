@@ -33,6 +33,7 @@ import { useGlassEffects } from '@/hooks/use-glass-effects';
 import { getGlassEffectStyles } from '@/lib/glass-effects';
 import { cn } from '@/lib/utils';
 import { GameModeToggle } from '@/components/game/game-mode-toggle';
+import { DivisionThemeSelector } from '@/components/theme/division-theme-selector';
 
 interface DashboardHeaderProps {
   onTimesheetClick?: () => void;
@@ -158,16 +159,8 @@ export function DashboardHeader({
           {/* Game Mode Toggle */}
           <GameModeToggle />
 
-          {/* Theme Customizer Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/theme')}
-            className="hover:bg-accent/10"
-            title="Customize Theme"
-          >
-            <Palette className="h-4 w-4" />
-          </Button>
+          {/* Division Theme Selector */}
+          <DivisionThemeSelector />
 
           {/* Theme Toggle */}
           <Button
@@ -175,6 +168,7 @@ export function DashboardHeader({
             size="sm"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="hover:bg-accent/10"
+            title="Dark/Light Mode"
           >
             {theme === 'dark' ? (
               <Sun className="h-4 w-4" />
