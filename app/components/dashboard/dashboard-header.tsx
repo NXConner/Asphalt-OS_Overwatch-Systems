@@ -26,6 +26,8 @@ import {
   Moon,
   CloudRain,
   Palette,
+  Droplet,
+  Sparkles,
 } from 'lucide-react';
 import { GlitchWrapper } from '@/components/ui/glitch-wrapper';
 import { useRouter } from 'next/navigation';
@@ -42,6 +44,8 @@ interface DashboardHeaderProps {
   onDirectionsClick?: () => void;
   onSettingsClick?: () => void;
   onWeatherClick?: () => void;
+  onGlassControlsClick?: () => void;
+  onAIAnalyzerClick?: () => void;
 }
 
 export function DashboardHeader({
@@ -50,6 +54,8 @@ export function DashboardHeader({
   onDirectionsClick,
   onSettingsClick,
   onWeatherClick,
+  onGlassControlsClick,
+  onAIAnalyzerClick,
 }: DashboardHeaderProps) {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
@@ -115,6 +121,32 @@ export function DashboardHeader({
             >
               <CloudRain className="h-4 w-4 mr-2" />
               Weather
+            </Button>
+          )}
+          
+          {onGlassControlsClick && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onGlassControlsClick}
+              className="hover:bg-accent/10"
+              title="Glass Effects Controls"
+            >
+              <Droplet className="h-4 w-4 mr-2" />
+              Glass
+            </Button>
+          )}
+          
+          {onAIAnalyzerClick && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onAIAnalyzerClick}
+              className="hover:bg-accent/10"
+              title="AI Surface Analyzer"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              AI Analyzer
             </Button>
           )}
           

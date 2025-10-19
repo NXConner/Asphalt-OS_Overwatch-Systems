@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings, Map, Bell, Palette, User, Shield } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { BackButton } from '@/components/ui/back-button';
 
 export default function SettingsPage() {
   const { data: session } = useSession() || {};
@@ -76,6 +77,9 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-5xl">
+      <div className="mb-4">
+        <BackButton />
+      </div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Settings className="h-8 w-8" />

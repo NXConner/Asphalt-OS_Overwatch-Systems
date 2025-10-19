@@ -18,6 +18,9 @@ import { RainRadarOverlay } from '@/components/map/rain-radar-overlay';
 import { EmployeeTrackerOverlay } from '@/components/map/employee-tracker-overlay';
 import { FleetTrackerOverlay } from '@/components/map/fleet-tracker-overlay';
 import { BottomTicker } from '@/components/map/bottom-ticker';
+import { GlassControls } from '@/components/glass-controls';
+import { GeminiChatbot } from '@/components/chatbot/gemini-chatbot';
+import { SurfaceAnalyzer } from '@/components/ai/surface-analyzer';
 import { MapMarker } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -46,6 +49,8 @@ export default function DashboardPage() {
   const [employeeTrackingEnabled, setEmployeeTrackingEnabled] = useState(true); // Always on by default
   const [fleetTrackingEnabled, setFleetTrackingEnabled] = useState(true); // Always on by default
   const [tickerEnabled, setTickerEnabled] = useState(true); // Always on by default
+  const [showGlassControls, setShowGlassControls] = useState(false);
+  const [showSurfaceAnalyzer, setShowSurfaceAnalyzer] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -175,6 +180,8 @@ export default function DashboardPage() {
         onDirectionsClick={() => handleDirections()}
         onSettingsClick={handleSettings}
         onWeatherClick={() => setWeatherWidgetVisible(!weatherWidgetVisible)}
+        onGlassControlsClick={() => setShowGlassControls(!showGlassControls)}
+        onAIAnalyzerClick={() => setShowSurfaceAnalyzer(!showSurfaceAnalyzer)}
       />
       
       <div className="flex flex-1 overflow-hidden">
@@ -237,8 +244,28 @@ export default function DashboardPage() {
             enabled={tickerEnabled}
             onToggle={setTickerEnabled}
           />
+
+          {/* Glass Effect Controls */}
+          {showGlassControls && (
+            <GlassControls onClose={() => setShowGlassControls(false)} />
+          )}
+
+          {/* AI Surface Analyzer */}
+          {showSurfaceAnalyzer && (
+            <SurfaceAnalyzer
+              mapInstance={mapInstance}
+              onClose={() => setShowSurfaceAnalyzer(false)}
+              onEstimateGenerated={(estimate) => {
+                console.log('Estimate generated:', estimate);
+                // Optionally auto-open estimate dialog
+              }}
+            />
+          )}
         </main>
       </div>
+
+      {/* Gemini AI Chatbot - Always available */}
+      <GeminiChatbot />
 
       {/* Dialogs */}
       <JobDialog

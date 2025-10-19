@@ -83,12 +83,16 @@ export function BottomTicker({
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 w-full max-w-4xl px-4">
+    <div className="fixed bottom-0 left-0 right-0 z-20">
       <div 
         className={cn(
-          "bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-3 flex items-center gap-3",
-          "transition-all duration-300"
+          "glass-morphism border-t border-primary/20 shadow-lg p-3 flex items-center gap-3",
+          "transition-all duration-300 w-full"
         )}
+        style={{
+          background: 'rgba(255, 140, 0, 0.1)',
+          backdropFilter: 'blur(10px)',
+        }}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
