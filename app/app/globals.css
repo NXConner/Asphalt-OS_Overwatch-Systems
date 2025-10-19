@@ -1211,3 +1211,398 @@ a:active,
     --border: 0 0% 20%;
   }
 }
+
+/* ========================================
+   DIVISION THEME ENHANCEMENTS
+   ======================================== */
+
+/* Glass morphism effect */
+.glass-morphism {
+  background: rgba(var(--background), 0.8) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(var(--border), 0.3);
+}
+
+/* Scanline effect (Division aesthetic) */
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanlines::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    transparent 50%,
+    rgba(0, 0, 0, 0.05) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  animation: scanline 8s linear infinite;
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(4px);
+  }
+}
+
+/* Corner brackets (Division HUD aesthetic) */
+.corner-brackets {
+  position: relative;
+}
+
+.corner-brackets::before,
+.corner-brackets::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--theme-primary-hex, hsl(var(--primary)));
+  pointer-events: none;
+}
+
+.corner-brackets::before {
+  top: 0;
+  left: 0;
+  border-right: none;
+  border-bottom: none;
+}
+
+.corner-brackets::after {
+  top: 0;
+  right: 0;
+  border-left: none;
+  border-bottom: none;
+}
+
+.corner-brackets-bottom::before,
+.corner-brackets-bottom::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--theme-primary-hex, hsl(var(--primary)));
+  pointer-events: none;
+}
+
+.corner-brackets-bottom::before {
+  bottom: 0;
+  left: 0;
+  border-right: none;
+  border-top: none;
+}
+
+.corner-brackets-bottom::after {
+  bottom: 0;
+  right: 0;
+  border-left: none;
+  border-top: none;
+}
+
+/* Holographic glow effect */
+.holo-glow {
+  box-shadow: 
+    0 0 10px var(--theme-glow, rgba(255, 215, 0, 0.3)),
+    inset 0 0 20px var(--theme-glow, rgba(255, 215, 0, 0.1));
+}
+
+.holo-glow:hover {
+  box-shadow: 
+    0 0 20px var(--theme-glow, rgba(255, 215, 0, 0.5)),
+    inset 0 0 30px var(--theme-glow, rgba(255, 215, 0, 0.2));
+  transition: box-shadow 0.3s ease;
+}
+
+/* Data stream animation */
+@keyframes dataStream {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.data-stream {
+  position: relative;
+  overflow: hidden;
+}
+
+.data-stream::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 20%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--theme-primary-hex, hsl(var(--primary))),
+    transparent
+  );
+  animation: dataStream 3s linear infinite;
+}
+
+/* Pulse animation for Division elements */
+@keyframes divisionPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+.division-pulse {
+  animation: divisionPulse 2s ease-in-out infinite;
+}
+
+/* Grid overlay (tactical map aesthetic) */
+.tactical-grid {
+  background-image: 
+    linear-gradient(rgba(var(--primary), 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--primary), 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Glitch effect enhancement */
+@keyframes glitchSkew {
+  0%, 100% {
+    transform: skew(0deg);
+  }
+  25% {
+    transform: skew(2deg);
+  }
+  50% {
+    transform: skew(-2deg);
+  }
+  75% {
+    transform: skew(1deg);
+  }
+}
+
+.glitch-enhanced {
+  animation: glitchSkew 0.5s ease-in-out infinite;
+}
+
+/* Mission card styling */
+.mission-card {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(var(--card), 0.9),
+    rgba(var(--muted), 0.9)
+  );
+  border: 2px solid var(--theme-primary-hex, hsl(var(--primary)));
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.mission-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--theme-gradient, linear-gradient(90deg, var(--primary), var(--secondary)));
+  opacity: 0.8;
+}
+
+.mission-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--theme-glow, rgba(255, 215, 0, 0.3));
+  transition: all 0.3s ease;
+}
+
+/* XP bar styling */
+.xp-bar {
+  position: relative;
+  height: 8px;
+  background: rgba(var(--muted), 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: var(--theme-gradient, linear-gradient(90deg, var(--primary), var(--secondary)));
+  transition: width 0.5s ease;
+  box-shadow: 0 0 10px var(--theme-glow, rgba(255, 215, 0, 0.5));
+}
+
+.xp-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Warrior mode styling */
+.warrior-mode {
+  --primary: 45 100% 50%; /* Orange */
+  --secondary: 20 100% 40%; /* Dark orange */
+  --accent: 35 100% 60%; /* Light orange */
+}
+
+.warrior-mode .mission-card {
+  border-color: #FF6D10;
+}
+
+.warrior-mode .holo-glow {
+  box-shadow: 
+    0 0 10px rgba(255, 109, 16, 0.3),
+    inset 0 0 20px rgba(255, 109, 16, 0.1);
+}
+
+/* Achievement rarity colors */
+.achievement-common {
+  border-color: #9CA3AF;
+  color: #9CA3AF;
+}
+
+.achievement-uncommon {
+  border-color: #4ADE80;
+  color: #4ADE80;
+}
+
+.achievement-rare {
+  border-color: #60A5FA;
+  color: #60A5FA;
+}
+
+.achievement-epic {
+  border-color: #C084FC;
+  color: #C084FC;
+}
+
+.achievement-legendary {
+  border-color: #FACC15;
+  color: #FACC15;
+  animation: legendary-glow 2s ease-in-out infinite;
+}
+
+@keyframes legendary-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(250, 204, 21, 0.8);
+  }
+}
+
+/* Status indicator dots */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+}
+
+.status-dot::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: inherit;
+  animation: statusPulse 2s ease-out infinite;
+}
+
+@keyframes statusPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.5);
+    opacity: 0;
+  }
+}
+
+.status-online {
+  background-color: #4ADE80;
+}
+
+.status-offline {
+  background-color: #EF4444;
+}
+
+.status-away {
+  background-color: #FACC15;
+}
+
+/* Responsive Division UI */
+@media (max-width: 768px) {
+  .corner-brackets::before,
+  .corner-brackets::after,
+  .corner-brackets-bottom::before,
+  .corner-brackets-bottom::after {
+    width: 8px;
+    height: 8px;
+  }
+
+  .mission-card {
+    border-width: 1px;
+  }
+
+  .xp-bar {
+    height: 6px;
+  }
+}
+
+/* Print mode - disable Division effects */
+@media print {
+  .scanlines::before,
+  .data-stream::after,
+  .corner-brackets::before,
+  .corner-brackets::after,
+  .corner-brackets-bottom::before,
+  .corner-brackets-bottom::after {
+    display: none !important;
+  }
+
+  .holo-glow,
+  .mission-card:hover {
+    box-shadow: none !important;
+  }
+}

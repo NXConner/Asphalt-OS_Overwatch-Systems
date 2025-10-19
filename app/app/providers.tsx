@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from 'sonner';
 import { useEffect } from 'react';
 import { applyTheme, getThemeById } from '@/lib/theme-presets';
+import { applyTheme as applyDivisionTheme, getStoredTheme } from '@/lib/division-themes';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   // Apply saved theme on mount
@@ -35,6 +36,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         localStorage.setItem('appTheme', 'black-gold');
       }
     }
+
+    // Also initialize Division theme
+    const divisionTheme = getStoredTheme();
+    applyDivisionTheme(divisionTheme);
   }, []);
 
   return (

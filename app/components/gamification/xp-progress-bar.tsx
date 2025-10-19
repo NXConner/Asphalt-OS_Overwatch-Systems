@@ -1,82 +1,126 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { calculateXPProgress, getRankTitle } from '@/lib/gamification';
+import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Trophy, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { TrendingUp } from 'lucide-react';
 
 interface XPProgressBarProps {
-  totalXP: number;
-  showDetails?: boolean;
-  className?: string;
+  userId?: string;
+  compact?: boolean;
 }
 
-export function XPProgressBar({ totalXP, showDetails = true, className = '' }: XPProgressBarProps) {
-  const { level, currentXP, xpForNextLevel, progress } = calculateXPProgress(totalXP);
-  const rankTitle = getRankTitle(level);
+export function XPProgressBar({ userId, compact = false }: XPProgressBarProps) {
+  const [stats, setStats] = useState({
+    totalXP: 0,
+    level: 1,
+    currentXP: 0,
+    xpForNextLevel: 100,
+    progress: 0,
+    rank: 'Apprentice Contractor',
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, [userId]);
+
+  const fetchStats = async () => {
+    try {
+      // TODO: Replace with actual API call when gamification API is implemented
+      // For now, use localStorage as temporary storage
+      const storedXP = parseInt(localStorage.getItem('user_total_xp') || '0');
+      const progress = calculateXPProgress(storedXP);
+      const rank = getRankTitle(progress.level);
+      
+      setStats({
+        totalXP: storedXP,
+        ...progress,
+        rank,
+      });
+    } catch (error) {
+      console.error('Error fetching XP stats:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+      </div>
+    );
+  }
+
+  if (compact) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30 hover:border-primary/50 transition-all">
+              <Trophy className="h-4 w-4 text-primary" />
+              <span className="text-sm font-bold">Lv.{stats.level}</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm font-semibold">{stats.rank}</span>
+                <span className="text-xs text-muted-foreground">Level {stats.level}</span>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span>XP</span>
+                  <span>{stats.currentXP} / {stats.xpForNextLevel}</span>
+                </div>
+                <Progress value={stats.progress} className="h-2" />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats.xpForNextLevel - stats.currentXP} XP until next level
+              </p>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
 
   return (
-    <div className={`space-y-2 ${className}`}>
-      {showDetails && (
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            <span className="font-bold">Level {level}</span>
-            <span className="text-muted-foreground">• {rankTitle}</span>
-          </div>
-          <div className="text-muted-foreground">
-            {currentXP.toLocaleString()} / {xpForNextLevel.toLocaleString()} XP
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col gap-2 p-4 rounded-lg bg-gradient-to-br from-background/80 to-muted/50 border border-border"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-primary" />
+          <div>
+            <h3 className="text-sm font-bold">Level {stats.level}</h3>
+            <p className="text-xs text-muted-foreground">{stats.rank}</p>
           </div>
         </div>
-      )}
-      
-      <div className="relative h-3 bg-muted rounded-full overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10" />
-        
-        {/* Progress bar */}
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 1, ease: 'easeOut' }}
-          className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-primary/80 rounded-full"
-        >
-          {/* Shine effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shine" />
-        </motion.div>
-        
-        {/* Glow effect */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="absolute inset-y-0 left-0 blur-sm"
-          style={{ width: `${progress}%` }}
-        >
-          <div className="h-full bg-primary/50" />
-        </motion.div>
+        <div className="flex items-center gap-1 text-xs text-primary">
+          <Zap className="h-3 w-3" />
+          <span className="font-mono">{stats.totalXP.toLocaleString()} XP</span>
+        </div>
       </div>
-      
-      {showDetails && (
-        <div className="text-xs text-muted-foreground text-right">
-          {progress.toFixed(1)}% to Level {level + 1}
-        </div>
-      )}
-    </div>
-  );
-}
 
-// Custom shine animation
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes shine {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
-  .animate-shine {
-    animation: shine 2s infinite;
-  }
-`;
-if (typeof document !== 'undefined') {
-  document.head.appendChild(style);
+      {/* Progress Bar */}
+      <div className="space-y-1">
+        <div className="flex justify-between text-xs">
+          <span className="text-muted-foreground">Progress to Level {stats.level + 1}</span>
+          <span className="font-mono">{stats.currentXP} / {stats.xpForNextLevel}</span>
+        </div>
+        <Progress value={stats.progress} className="h-2" />
+        <p className="text-xs text-muted-foreground text-right">
+          {(stats.xpForNextLevel - stats.currentXP).toLocaleString()} XP remaining
+        </p>
+      </div>
+    </motion.div>
+  );
 }

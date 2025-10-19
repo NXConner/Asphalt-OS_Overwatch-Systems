@@ -34,6 +34,7 @@ import { getGlassEffectStyles } from '@/lib/glass-effects';
 import { cn } from '@/lib/utils';
 import { GameModeToggle } from '@/components/game/game-mode-toggle';
 import { DivisionThemeSelector } from '@/components/theme/division-theme-selector';
+import { XPProgressBar } from '@/components/gamification/xp-progress-bar';
 
 interface DashboardHeaderProps {
   onTimesheetClick?: () => void;
@@ -156,6 +157,9 @@ export function DashboardHeader({
 
         {/* Right section */}
         <div className="flex items-center gap-3">
+          {/* XP Progress Bar */}
+          <XPProgressBar compact />
+
           {/* Game Mode Toggle */}
           <GameModeToggle />
 
