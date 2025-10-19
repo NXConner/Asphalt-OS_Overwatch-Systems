@@ -55,6 +55,20 @@ model User {
   hireDate      DateTime  @default(now())
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  
+  // Veteran status
+  isVeteran     Boolean   @default(false)
+  veteranBranch VeteranBranch?
+  veteranServiceYears Int?
+  veteranDischargeType VeteranDischargeType?
+  veteranDischargeDate DateTime?
+  veteranDocuments Json? // Array of {documentType, cloudStoragePath, fileName}
+  
+  // Clock in/out status
+  isCurrentlyClockedIn Boolean @default(false)
+  currentClockInId String?
+  lastClockInTime DateTime?
+  lastClockOutTime DateTime?
 
   accounts      Account[]
   sessions      Session[]
@@ -73,6 +87,28 @@ model User {
   phoneUsage        PhoneUsage[] @relation("PhoneUsageTracking")
   complianceViolations ComplianceViolation[] @relation("ComplianceViolations")
   employeeCard      EmployeeCard? @relation("EmployeeCard")
+  clockRecords      ClockRecord[] @relation("EmployeeClockRecords")
+}
+
+enum VeteranBranch {
+  ARMY
+  NAVY
+  AIR_FORCE
+  MARINES
+  COAST_GUARD
+  SPACE_FORCE
+  NATIONAL_GUARD
+  RESERVES
+}
+
+enum VeteranDischargeType {
+  HONORABLE
+  GENERAL_UNDER_HONORABLE
+  OTHER_THAN_HONORABLE
+  BAD_CONDUCT
+  DISHONORABLE
+  ENTRY_LEVEL_SEPARATION
+  MEDICAL
 }
 
 model VerificationToken {
@@ -2312,4 +2348,145 @@ enum EmployeeActivityStatus {
   AT_JOB_SITE
   ON_BREAK
   IDLE
+}
+
+// ========================================
+// CLOCK IN/OUT SYSTEM
+// ========================================
+
+model ClockRecord {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation("EmployeeClockRecords", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Clock in details
+  clockInTime   DateTime
+  clockInLat    Float?
+  clockInLng    Float?
+  clockInAddress String?
+  clockInDeviceInfo Json?
+  
+  // Clock out details
+  clockOutTime  DateTime?
+  clockOutLat   Float?
+  clockOutLng   Float?
+  clockOutAddress String?
+  clockOutDeviceInfo Json?
+  
+  // Duration
+  totalMinutes  Int?
+  totalHours    Float?
+  
+  // Associated job
+  jobId         String?
+  
+  // Break tracking
+  breaks        Json? // Array of {startTime, endTime, duration}
+  totalBreakMinutes Int @default(0)
+  
+  // Status
+  status        ClockRecordStatus @default(ACTIVE)
+  
+  // Notes
+  notes         String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([clockInTime])
+  @@index([status])
+  @@index([userId, clockInTime])
+}
+
+enum ClockRecordStatus {
+  ACTIVE      // Currently clocked in
+  COMPLETED   // Clocked out
+  EDITED      // Manually edited by admin
+  APPROVED    // Approved for payroll
+  REJECTED    // Rejected/disputed
+}
+
+// ========================================
+// MAP & APP SETTINGS
+// ========================================
+
+model AppSettings {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  
+  // Map default location
+  mapDefaultAddress String?
+  mapDefaultLat Float?
+  mapDefaultLng Float?
+  mapDefaultZoom Int @default(12)
+  useDefaultLocation Boolean @default(false) // If false, use GPS
+  
+  // Map display preferences
+  mapType       String @default("hybrid") // roadmap, satellite, hybrid, terrain
+  showTraffic   Boolean @default(false)
+  show3dBuildings Boolean @default(false)
+  
+  // UI preferences
+  sidebarCollapsed Boolean @default(false)
+  theme         String @default("system") // light, dark, system
+  customTheme   String? // division-tactical, division-dark-watch, etc.
+  
+  // Notifications
+  enableNotifications Boolean @default(true)
+  enableWeatherAlerts Boolean @default(true)
+  enableGeofenceAlerts Boolean @default(true)
+  
+  // Dashboard widgets
+  widgets       Json? // Array of enabled widgets and their positions
+  
+  // Mock data
+  useMockData   Boolean @default(false)
+  mockDataGeneratedAt DateTime?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// ========================================
+// MOCK DATA MANAGEMENT
+// ========================================
+
+model MockDataConfig {
+  id            String   @id @default(cuid())
+  
+  // Global mock data settings
+  isEnabled     Boolean @default(false)
+  generatedAt   DateTime?
+  generatedBy   String?
+  
+  // Data counts
+  mockJobsCount Int @default(50)
+  mockEmployeesCount Int @default(10)
+  mockVehiclesCount Int @default(5)
+  mockClientsCount Int @default(30)
+  
+  // Seed for reproducible random data
+  seed          Int?
+  
+  // Categories of mock data enabled
+  mockJobs      Boolean @default(true)
+  mockEmployees Boolean @default(true)
+  mockVehicles  Boolean @default(true)
+  mockClients   Boolean @default(true)
+  mockExpenses  Boolean @default(true)
+  mockRevenues  Boolean @default(true)
+  mockTimesheets Boolean @default(true)
+  mockLocations Boolean @default(true)
+  
+  // Last cleared
+  lastCleared   DateTime?
+  clearedBy     String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([isEnabled])
 }
