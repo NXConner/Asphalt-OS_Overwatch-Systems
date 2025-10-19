@@ -274,6 +274,9 @@ model Timesheet {
   updatedAt DateTime @updatedAt
   
   user User @relation(fields: [userId], references: [id])
+  
+  @@index([userId, clockIn])
+  @@index([jobId])
 }
 
 // Payroll records
@@ -387,6 +390,11 @@ model Expense {
   job       Job?            @relation(fields: [jobId], references: [id])
   creator   User            @relation("CreatedExpenses", fields: [createdBy], references: [id])
   approver  User?           @relation("ApprovedExpenses", fields: [approvedBy], references: [id])
+  
+  @@index([expenseDate])
+  @@index([categoryId])
+  @@index([createdBy])
+  @@index([status])
 }
 
 // Revenue tracking
@@ -936,6 +944,9 @@ model Client {
   documents ClientDocument[]
   contracts Contract[]
   bids      Bid[]
+  
+  @@index([companyName])
+  @@index([email])
 }
 
 // Update Job model to include client relationship
@@ -988,6 +999,10 @@ model Job {
   revenues  Revenue[]
   measurements MapMeasurement[]
   invoices  Invoice[]
+  
+  @@index([status, scheduledDate])
+  @@index([clientId])
+  @@index([address])
 }
 
 // Documents & Contracts System
@@ -2489,4 +2504,26 @@ model MockDataConfig {
   updatedAt     DateTime @updatedAt
   
   @@index([isEnabled])
+}
+
+// ========================================
+// AUDIT LOGGING
+// ========================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String   // CREATE, UPDATE, DELETE, LOGIN, etc.
+  resource   String   // Job, Employee, Invoice, etc.
+  resourceId String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   String?  // JSON string of additional details
+  success    Boolean  @default(true)
+  error      String?
+  timestamp  DateTime @default(now())
+  
+  @@index([userId, timestamp])
+  @@index([action, timestamp])
+  @@index([resource, resourceId])
 }
