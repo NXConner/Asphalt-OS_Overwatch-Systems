@@ -1,3 +1,32 @@
+/**
+ * @openapi
+ * /api/email:
+ *   post:
+ *     summary: Send an email via configured provider
+ *     tags:
+ *       - Email
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               to: { type: string, format: email }
+ *               subject: { type: string }
+ *               text: { type: string }
+ *               html: { type: string }
+ *               from: { type: string, format: email }
+ *     responses:
+ *       200:
+ *         description: Email send result
+ *       400:
+ *         description: Validation error
+ *       405:
+ *         description: Method not allowed
+ *       500:
+ *         description: Provider error
+ */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { sendEmail } from '@/lib/email';

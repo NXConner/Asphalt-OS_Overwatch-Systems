@@ -1,3 +1,34 @@
+/**
+ * @openapi
+ * /api/weather/recommendation:
+ *   post:
+ *     summary: Get scheduling recommendation window based on forecast
+ *     tags:
+ *       - Weather
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               forecast:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     time: { type: string, format: date-time }
+ *                     precipitationIn: { type: number }
+ *                     tempF: { type: number }
+ *                     windMph: { type: number }
+ *     responses:
+ *       200:
+ *         description: Recommended scheduling window
+ *       400:
+ *         description: Validation error
+ *       405:
+ *         description: Method not allowed
+ */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { getSchedulingRecommendation } from '@/lib/weather';

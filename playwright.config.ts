@@ -8,4 +8,10 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
+  webServer: {
+    command: 'npm run start',
+    port: 3000,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
 });

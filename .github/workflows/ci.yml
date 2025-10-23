@@ -16,9 +16,27 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run openapi:gen --if-present
       - run: npm run lint --if-present
       - run: npm run build --if-present
       - run: npm test --if-present
+  e2e:
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps
+      - run: npm run test:e2e
+        env:
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: test_secret
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app
   codeql:
     runs-on: ubuntu-latest
     permissions:
@@ -37,4 +55,27 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npm audit --audit-level=high || true
+      - run: npm run audit:ci || true
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t pavement-performance-suite:ci .
+  migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Prepare database
+        run: |
+          docker run -d --name db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=app -p 5432:5432 postgres:16-alpine
+          sleep 10
+      - name: Run Prisma migrate (staging simulation)
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app

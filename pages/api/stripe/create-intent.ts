@@ -1,3 +1,29 @@
+/**
+ * @openapi
+ * /api/stripe/create-intent:
+ *   post:
+ *     summary: Create a Stripe PaymentIntent
+ *     tags:
+ *       - Payments
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amountCents: { type: number }
+ *               currency: { type: string, default: 'usd' }
+ *     responses:
+ *       200:
+ *         description: Client secret returned
+ *       400:
+ *         description: Validation error
+ *       405:
+ *         description: Method not allowed
+ *       500:
+ *         description: Stripe error
+ */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { createPaymentIntent } from '@/lib/stripe';

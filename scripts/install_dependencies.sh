@@ -29,6 +29,8 @@ if [ -d .git ]; then
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# Format and lint
+npm run format:check --silent || exit 1
 npm run lint --silent || exit 1
 HOOK
   chmod +x .husky/pre-commit
