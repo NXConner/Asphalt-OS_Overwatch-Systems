@@ -1,7 +1,7 @@
 generator client {
-    provider = "prisma-client-js"
-    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
-    output = "/home/ubuntu/asphalt_paving_maps/app/node_modules/.prisma/client"
+  provider = "prisma-client-js"
+  // Keep default output inside repo to avoid absolute paths
+  output   = "node_modules/.prisma/client"
 }
 
 datasource db {
