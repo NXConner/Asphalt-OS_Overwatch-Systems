@@ -1,21 +1,19 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-labels: bug
 ---
 
-## Describe the bug
+### Describe the bug
 
-## To Reproduce
-1. 
-2. 
+### To Reproduce
 
-## Expected behavior
+### Expected behavior
 
-## Screenshots
+### Screenshots
 
-## Environment
-- Browser/OS:
+### Environment
+- OS:
+- Browser:
 - Version:
 
-## Additional context
+### Additional context
