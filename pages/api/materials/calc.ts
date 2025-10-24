@@ -1,3 +1,41 @@
+/**
+ * @openapi
+ * /api/materials/calc:
+ *   post:
+ *     summary: Calculate materials for sealcoat, crack fill, and striping
+ *     tags:
+ *       - Materials
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sealcoat:
+ *                 type: object
+ *                 properties:
+ *                   areaSqFt: { type: number }
+ *                   coats: { type: number }
+ *                   coverageSqFtPerGallon: { type: number }
+ *               crack:
+ *                 type: object
+ *                 properties:
+ *                   linearFeet: { type: number }
+ *                   poundsPerLinearFoot: { type: number }
+ *               striping:
+ *                 type: object
+ *                 properties:
+ *                   linearFeet: { type: number }
+ *                   coverageLfPerGallon: { type: number }
+ *     responses:
+ *       200:
+ *         description: Calculated material quantities
+ *       400:
+ *         description: Validation error
+ *       405:
+ *         description: Method not allowed
+ */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { calculateSealerGallons, calculateCrackFillerPounds, calculateStripingGallons } from '@/lib/materials';
